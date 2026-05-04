@@ -66,6 +66,9 @@ export default function Dashboard() {
           <button onClick={() => router.push('/stock')} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #5E1119', color: '#5E1119', borderRadius: 4, cursor: 'pointer' }}>
             Cave ({stock.length} réf.)
           </button>
+          <button onClick={() => router.push('/parametres')} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #5E1119', color: '#5E1119', borderRadius: 4, cursor: 'pointer' }}>
+            Paramètres
+          </button>
           <button onClick={handleDeconnexion} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #ccc', color: '#666', borderRadius: 4, cursor: 'pointer' }}>
             Déconnexion
           </button>
