@@ -1,21 +1,22 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 export default function Stock() {
   const [references, setReferences] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState('')
   const [nom, setNom] = useState('')
   const [appellation, setAppellation] = useState('')
   const [couleur, setCouleur] = useState('rouge')
   const [quantite, setQuantite] = useState('')
   const [millesime, setMillesime] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
   const router = useRouter()
 
-  useEffect(() => {
-    chargerStock()
-  }, [])
+  useEffect(() => { chargerStock() }, [])
 
   const chargerStock = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -43,19 +44,78 @@ export default function Stock() {
     setLoading(false)
   }
 
+  const importerCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImporting(true)
+    setImportMsg('')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const text = await file.text()
+    const lines = text.split('\n').filter(l => l.trim())
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim())
+    let imported = 0
+    let errors = 0
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''))
+      if (values.length < 2) continue
+      const row: any = {}
+      headers.forEach((h, idx) => { row[h] = values[idx] || '' })
+      const nomRef = row['nom_reference'] || row['nom'] || row['name'] || values[0]
+      const qty = parseInt(row['quantite'] || row['quantity'] || row['qty'] || values[4] || '1')
+      if (!nomRef) { errors++; continue }
+      const { error } = await supabase.from('stocks').insert({
+        user_id: user.id,
+        nom_reference: nomRef,
+        appellation: row['appellation'] || values[1] || '',
+        couleur: row['couleur'] || row['color'] || values[2] || 'rouge',
+        millesime: parseInt(row['millesime'] || row['vintage'] || values[3]) || null,
+        quantite: isNaN(qty) ? 1 : qty,
+        derniere_vente: new Date().toISOString().split('T')[0]
+      })
+      if (error) { errors++ } else { imported++ }
+    }
+    setImportMsg(`✓ ${imported} références importées${errors > 0 ? ` (${errors} erreurs ignorées)` : ''}`)
+    await chargerStock()
+    setImporting(false)
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
   const supprimerReference = async (id: string) => {
     await supabase.from('stocks').delete().eq('id', id)
     await chargerStock()
   }
 
+  const viderStock = async () => {
+    if (!confirm('Supprimer toutes les références ?')) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.from('stocks').delete().eq('user_id', user.id)
+    await chargerStock()
+  }
+
   return (
-    <main style={{ maxWidth: 900, margin: '0 auto', padding: 24, backgroundColor: '#ffffff', minHeight: '100vh' }}>
+    <main style={{ maxWidth: 960, margin: '0 auto', padding: 24, backgroundColor: '#ffffff', minHeight: '100vh' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, borderBottom: '2px solid #5E1119', paddingBottom: 16 }}>
         <h1 style={{ color: '#5E1119', margin: 0 }}>·ispalis· — Stock cave</h1>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button onClick={() => router.push('/dashboard')} style={{ padding: '8px 16px', background: '#5E1119', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Dashboard</button>
+        <button onClick={() => router.push('/dashboard')} style={{ padding: '8px 16px', background: '#5E1119', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+          Dashboard
+        </button>
+      </div>
+
+      <div style={{ background: '#F5E6E8', borderRadius: 8, padding: 16, marginBottom: 24, borderLeft: '4px solid #5E1119' }}>
+        <div style={{ fontWeight: 600, color: '#5E1119', marginBottom: 8 }}>📥 Import CSV</div>
+        <p style={{ color: '#666', fontSize: 13, marginBottom: 12 }}>
+          Importez votre stock depuis un fichier Excel/CSV. Colonnes attendues :<br />
+          <code style={{ background: '#fff', padding: '2px 6px', borderRadius: 3, fontSize: 12 }}>nom_reference, appellation, couleur, millesime, quantite</code>
+        </p>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <input ref={fileRef} type="file" accept=".csv,.txt" onChange={importerCSV} disabled={importing} style={{ fontSize: 14, color: '#1a1a1a' }} />
+          {importing && <span style={{ color: '#5E1119', fontSize: 13 }}>Import en cours...</span>}
+          {importMsg && <span style={{ color: '#2E7D32', fontSize: 13, fontWeight: 600 }}>{importMsg}</span>}
         </div>
       </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
         <div>
           <h2 style={{ color: '#1a1a1a', marginBottom: 16 }}>Ajouter une référence</h2>
@@ -94,13 +154,20 @@ export default function Stock() {
           </form>
         </div>
         <div>
-          <h2 style={{ color: '#1a1a1a', marginBottom: 16 }}>Votre cave ({references.length} références)</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h2 style={{ color: '#1a1a1a', margin: 0 }}>Votre cave ({references.length} références)</h2>
+            {references.length > 0 && (
+              <button onClick={viderStock} style={{ fontSize: 12, color: '#999', background: 'transparent', border: '1px solid #ddd', borderRadius: 4, padding: '4px 10px', cursor: 'pointer' }}>
+                Tout supprimer
+              </button>
+            )}
+          </div>
           {references.length === 0 ? (
             <div style={{ background: '#f9f9f9', padding: 24, borderRadius: 8, textAlign: 'center', color: '#666' }}>
-              Aucune référence — ajoutez vos vins
+              Aucune référence — ajoutez vos vins ou importez un CSV
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 500, overflowY: 'auto' }}>
               {references.map((ref: any) => (
                 <div key={ref.id} style={{ background: '#f9f9f9', padding: 12, borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: `4px solid ${ref.couleur === 'rouge' ? '#5E1119' : ref.couleur === 'blanc' ? '#EEA300' : ref.couleur === 'rose' ? '#E8A0A0' : '#666'}` }}>
                   <div>
