@@ -1,26 +1,43 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ─── Ispalis brand tokens (depuis la charte LETSHOW + extensions terroir) */
+  --isp-burgundy: #5E1119;
+  --isp-burgundy-deep: #3F0B11;
+  --isp-ochre: #EEA300;
+  --isp-ochre-soft: #F2BD4E;
+  --isp-ink: #1A1410;
+  --isp-paper: #F4EDE0;
+  --isp-paper-warm: #FBF6EC;
+  --isp-card: #FFFCF6;
+  --isp-sage: #7D8A5C;
+  --isp-sage-soft: #A8B488;
+  --isp-sage-pale: #E4E8D6;
+  --isp-terracotta: #B5613B;
+  --isp-rule: #E2D8C2;
+  --isp-muted: #7A6A55;
+
+  --background: var(--isp-paper);
+  --foreground: var(--isp-ink);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-burgundy: var(--isp-burgundy);
+  --color-ochre: var(--isp-ochre);
+  --color-sage: var(--isp-sage);
+  --color-paper: var(--isp-paper);
+  --color-card: var(--isp-card);
+  --font-sans: var(--font-nunito);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-nunito), "Nunito", system-ui, -apple-system, sans-serif;
+  font-feature-settings: "ss01";
 }
+
+/* Numeric tabular for stats */
+.tabular { font-variant-numeric: tabular-nums; }
