@@ -291,7 +291,11 @@ export default function Carte() {
                   <div key={label} style={{ background: ISP.paperWarm, borderRadius: 12, padding: '16px 16px 18px', borderTop: `4px solid ${color}` }}>
                     <div style={{ fontSize: 10.5, fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>{label}</div>
                     <div style={{ fontWeight: 800, fontSize: 15, color: ISP.ink, lineHeight: 1.3 }}>{data?.vin}</div>
-                    <div style={{ color: ISP.muted, fontSize: 13, marginTop: 4, fontWeight: 600 }}>{data?.prix}</div>
+                    <div style={{ color: ISP.muted, fontSize: 12, marginTop: 4, fontWeight: 600, display: 'flex', gap: 8 }}>
+  <span>🍷 verre : {data?.prix_verre}</span>
+  <span style={{ color: ISP.rule }}>·</span>
+  <span>🍾 bouteille : {data?.prix_bouteille}</span>
+</div>
                     <div style={{ fontSize: 13, fontStyle: 'italic', color: ISP.ink, marginTop: 10, lineHeight: 1.45 }}>« {data?.argument} »</div>
                   </div>
                 ))}
