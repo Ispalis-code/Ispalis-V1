@@ -493,23 +493,25 @@ function Logo() {
       style={{
         display: 'inline-flex',
         alignItems: 'baseline',
-        gap: 6,
         fontWeight: 800,
-        fontSize: 22,
+        fontSize: 26,
         color: ISP.burgundy,
-        letterSpacing: '-0.02em',
+        letterSpacing: '-0.025em',
+        lineHeight: 1,
       }}
     >
-      <span style={{ fontStyle: 'italic' }}>i</span>
+      <span style={{ fontStyle: 'italic', fontWeight: 800 }}>i</span>
       <span>spalis</span>
       <span
+        aria-hidden
         style={{
-          width: 5,
-          height: 5,
+          width: 6,
+          height: 6,
           borderRadius: '50%',
           background: ISP.terracotta,
-          marginLeft: 2,
-          alignSelf: 'center',
+          marginLeft: 4,
+          alignSelf: 'flex-end',
+          marginBottom: 4,
         }}
       ></span>
     </div>
