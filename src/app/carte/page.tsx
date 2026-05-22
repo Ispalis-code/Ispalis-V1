@@ -88,7 +88,30 @@ function DishRow({ index, value, onChange, onDelete }: { index: number; value: s
     </div>
   )
 }
-
+function AlertesStock({ alertes }: { alertes: any[] }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{ background: '#FFF7E0', border: `1.5px solid #EEA300`, borderRadius: 14, marginBottom: 22, overflow: 'hidden' }}>
+      <button onClick={() => setOpen(o => !o)} style={{ width: '100%', padding: '14px 22px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'inherit' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 800, color: '#7A5210', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#EEA300', color: '#5E1119', display: 'grid', placeItems: 'center', fontSize: 13 }}>!</span>
+          {alertes.length} alerte{alertes.length > 1 ? 's' : ''} stock
+        </div>
+        <span style={{ fontSize: 18, color: '#7A5210', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▾</span>
+      </button>
+      {open && (
+        <div style={{ padding: '0 22px 16px', borderTop: '1px solid #EEA30040' }}>
+          {alertes.map((a: any, i: number) => (
+            <div key={i} style={{ marginTop: 12, color: '#1A1410', fontSize: 14 }}>
+              <strong>{a.reference}</strong> — {a.message}
+              <div style={{ color: '#7A6A55', fontSize: 13, marginTop: 2 }}>→ {a.action}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 export default function Carte() {
   const [plats, setPlats] = useState<string[]>([])
   const [stock, setStock] = useState<any[]>([])
@@ -284,20 +307,7 @@ export default function Carte() {
             <span style={{ flex: 1, height: 1.5, background: `${ISP.terracotta}33` }} />
           </div>
 
-          {alertes.length > 0 && (
-            <div style={{ background: '#FFF7E0', border: `1.5px solid ${ISP.ochre}`, borderRadius: 14, padding: '18px 22px', marginBottom: 22 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 800, color: '#7A5210', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                <span style={{ width: 22, height: 22, borderRadius: '50%', background: ISP.ochre, color: ISP.burgundy, display: 'grid', placeItems: 'center', fontSize: 13 }}>!</span>
-                Alertes stock
-              </div>
-              {alertes.map((a: any, i: number) => (
-                <div key={i} style={{ marginBottom: 10, color: ISP.ink, fontSize: 14 }}>
-                  <strong>{a.reference}</strong> — {a.message}
-                  <div style={{ color: ISP.muted, fontSize: 13, marginTop: 2 }}>→ {a.action}</div>
-                </div>
-              ))}
-            </div>
-          )}
+       {alertes.length > 0 && <AlertesStock alertes={alertes} />}
 
           {accords.map((accord: any, i: number) => (
             <article key={i} style={{ background: ISP.card, borderRadius: 18, padding: '26px 30px', marginBottom: 18, boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -18px rgba(60,40,20,.2)' }}>
