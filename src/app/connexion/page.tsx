@@ -128,9 +128,9 @@ export default function Connexion() {
                 color: ISP.ink,
               }}
             >
-              Bon retour
+              L'accord parfait,
               <br />
-              <span style={{ color: ISP.terracotta, fontStyle: 'italic', fontWeight: 700 }}>en cave.</span>
+              <span style={{ color: ISP.terracotta, fontStyle: 'italic', fontWeight: 700 }}>avec ou sans alcool.</span>
             </h1>
             <p
               style={{
@@ -141,7 +141,7 @@ export default function Connexion() {
                 lineHeight: 1.55,
               }}
             >
-              Reprenez le service là où vous l'aviez laissé — vos accords, votre cave, votre carte.
+              "L'ingénierie au service de votre table."
             </p>
 
             <figure
@@ -163,7 +163,7 @@ export default function Connexion() {
                   letterSpacing: '-0.005em',
                 }}
               >
-                « Un bon accord ne se devine pas — il se travaille, et il se transmet. »
+                « Un bon accord ne se devine pas, il se travaille, et il se transmet. »
               </blockquote>
               <figcaption
                 style={{
