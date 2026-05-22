@@ -11,10 +11,9 @@ Toujours préciser "artisanal" ou "maison" pour valoriser la suggestion.
 Structure exacte pour UN seul plat :
 {
   "plat": "nom exact",
-  "accord_accessible": {"vin": "appellation", "prix": "8-15€", "argument": "phrase courte"},
-  "accord_intermediaire": {"vin": "appellation", "prix": "15-28€", "argument": "phrase courte"},
-  "accord_prestige": {"vin": "appellation", "prix": "28-55€", "argument": "phrase courte"},
-  "accord_sans_alcool": {"boisson": "boisson artisanale", "argument": "phrase courte"}
+ "accord_accessible": {"vin": "appellation", "prix_verre": "4-7€", "prix_bouteille": "18-28€", "argument": "phrase courte"},
+"accord_intermediaire": {"vin": "appellation", "prix_verre": "7-12€", "prix_bouteille": "28-48€", "argument": "phrase courte"},
+"accord_prestige": {"vin": "appellation", "prix_verre": "12-20€", "prix_bouteille": "48-90€", "argument": "phrase courte"},
 }`;
 
 export async function POST(request: NextRequest) {
