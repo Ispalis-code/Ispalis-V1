@@ -63,6 +63,32 @@ const UploadIcon = ({ size = 18, color = 'currentColor' }: { size?: number; colo
   </svg>
 )
 
+function NavBtn({ label, badge, active, muted, onClick }: { label: string; badge?: number; active?: boolean; muted?: boolean; onClick?: () => void }) {
+  return (
+    <button onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 13px', borderRadius: 10, background: active ? ISP.burgundy : 'transparent', color: active ? ISP.card : muted ? ISP.muted : ISP.ink, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 700, transition: 'background .15s' }}
+      onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = `${ISP.sagePale}80` }}
+      onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}>
+      <span>{label}</span>
+      {badge !== undefined && (
+        <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: active ? ISP.ochre : `${ISP.sage}33`, color: active ? ISP.burgundy : ISP.ink }}>{badge}</span>
+      )}
+    </button>
+  )
+}
+
+function DishRow({ index, value, onChange, onDelete }: { index: number; value: string; onChange: (v: string) => void; onDelete: () => void }) {
+  const filled = value.trim().length > 0
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: ISP.paperWarm, borderRadius: 10, padding: '4px 6px 4px 12px', border: `1px solid ${filled ? `${ISP.terracotta}40` : ISP.rule}`, transition: 'all .15s' }}>
+      <span style={{ fontSize: 13, fontWeight: 800, color: filled ? ISP.burgundy : ISP.muted, minWidth: 20 }}>{index}.</span>
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={`Plat ${index}`} style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', padding: '8px 0', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, color: ISP.ink }} />
+      <button onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'transparent', color: ISP.muted, cursor: 'pointer', fontSize: 16, fontWeight: 700, display: 'grid', placeItems: 'center', transition: 'all .15s' }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `${ISP.burgundy}15`; (e.currentTarget as HTMLButtonElement).style.color = ISP.burgundy }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = ISP.muted }}>×</button>
+    </div>
+  )
+}
+
 export default function Carte() {
   const [plats, setPlats] = useState<string[]>([])
   const [stock, setStock] = useState<any[]>([])
@@ -166,8 +192,8 @@ export default function Carte() {
   const platsRemplis = plats.filter(p => p.trim()).length
   const hasResults = accords.length > 0 || alertes.length > 0 || loading
 
-  // ─── Panneau gauche (formulaire)
-  const LeftPanel = () => (
+  // ─── JSX panneau gauche (pas une fonction pour éviter le bug de focus)
+  const leftPanel = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Import PDF */}
       <section style={{ background: ISP.card, borderRadius: 18, padding: '28px 30px', boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)', display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -241,8 +267,8 @@ export default function Carte() {
     </div>
   )
 
-  // ─── Panneau droit (accords)
-  const RightPanel = () => (
+  // ─── JSX panneau droit (pas une fonction pour éviter le bug de focus)
+  const rightPanel = (
     <div>
       {loading ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 16 }}>
@@ -291,11 +317,11 @@ export default function Carte() {
                   <div key={label} style={{ background: ISP.paperWarm, borderRadius: 12, padding: '16px 16px 18px', borderTop: `4px solid ${color}` }}>
                     <div style={{ fontSize: 10.5, fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>{label}</div>
                     <div style={{ fontWeight: 800, fontSize: 15, color: ISP.ink, lineHeight: 1.3 }}>{data?.vin}</div>
-                    <div style={{ color: ISP.muted, fontSize: 12, marginTop: 4, fontWeight: 600, display: 'flex', gap: 8 }}>
-  <span>🍷 verre : {data?.prix_verre}</span>
-  <span style={{ color: ISP.rule }}>·</span>
-  <span>🍾 bouteille : {data?.prix_bouteille}</span>
-</div>
+                    <div style={{ color: ISP.muted, fontSize: 12, marginTop: 4, fontWeight: 600, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <span>🍷 verre : {data?.prix_verre}</span>
+                      <span style={{ color: ISP.rule }}>·</span>
+                      <span>🍾 bouteille : {data?.prix_bouteille}</span>
+                    </div>
                     <div style={{ fontSize: 13, fontStyle: 'italic', color: ISP.ink, marginTop: 10, lineHeight: 1.45 }}>« {data?.argument} »</div>
                   </div>
                 ))}
@@ -331,17 +357,15 @@ export default function Carte() {
       </nav>
 
       {hasResults ? (
-        // ─── SPLIT SCREEN
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.4fr)', gap: 32, padding: '28px 44px 64px', maxWidth: 1440, margin: '0 auto' }}>
           <div style={{ position: 'sticky', top: 80, alignSelf: 'start', maxHeight: 'calc(100vh - 100px)', overflowY: 'auto' }}>
-            <LeftPanel />
+            {leftPanel}
           </div>
           <div>
-            <RightPanel />
+            {rightPanel}
           </div>
         </div>
       ) : (
-        // ─── LAYOUT ORIGINAL
         <>
           <header style={{ padding: '32px 44px 8px', maxWidth: 1280, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 800, color: ISP.terracotta }}>
@@ -357,37 +381,11 @@ export default function Carte() {
               Uploadez un PDF ou saisissez vos plats à la main — Ispalis génère les accords pour l&apos;ensemble du menu.
             </p>
           </header>
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.2fr)', gap: 24, padding: '24px 44px 32px', maxWidth: 1280, margin: '0 auto' }}>
-            <LeftPanel />
+          <div style={{ padding: '24px 44px 64px', maxWidth: 1280, margin: '0 auto' }}>
+            {leftPanel}
           </div>
         </>
       )}
     </main>
-  )
-}
-
-function NavBtn({ label, badge, active, muted, onClick }: { label: string; badge?: number; active?: boolean; muted?: boolean; onClick?: () => void }) {
-  return (
-    <button onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 13px', borderRadius: 10, background: active ? ISP.burgundy : 'transparent', color: active ? ISP.card : muted ? ISP.muted : ISP.ink, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 700, transition: 'background .15s' }}
-      onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = `${ISP.sagePale}80` }}
-      onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}>
-      <span>{label}</span>
-      {badge !== undefined && (
-        <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: active ? ISP.ochre : `${ISP.sage}33`, color: active ? ISP.burgundy : ISP.ink }}>{badge}</span>
-      )}
-    </button>
-  )
-}
-
-function DishRow({ index, value, onChange, onDelete }: { index: number; value: string; onChange: (v: string) => void; onDelete: () => void }) {
-  const filled = value.trim().length > 0
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: ISP.paperWarm, borderRadius: 10, padding: '4px 6px 4px 12px', border: `1px solid ${filled ? `${ISP.terracotta}40` : ISP.rule}`, transition: 'all .15s' }}>
-      <span style={{ fontSize: 13, fontWeight: 800, color: filled ? ISP.burgundy : ISP.muted, minWidth: 20 }}>{index}.</span>
-      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={`Plat ${index}`} style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', padding: '8px 0', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, color: ISP.ink }} />
-      <button onClick={onDelete} style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'transparent', color: ISP.muted, cursor: 'pointer', fontSize: 16, fontWeight: 700, display: 'grid', placeItems: 'center', transition: 'all .15s' }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `${ISP.burgundy}15`; (e.currentTarget as HTMLButtonElement).style.color = ISP.burgundy }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = ISP.muted }}>×</button>
-    </div>
   )
 }
