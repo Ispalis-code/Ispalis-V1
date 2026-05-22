@@ -63,6 +63,47 @@ const ArrowRightIcon = ({ size = 14 }: { size?: number }) => (
   </svg>
 )
 
+function NavBtn({ label, badge, active, muted, onClick }: { label: string; badge?: number; active?: boolean; muted?: boolean; onClick?: () => void }) {
+  return (
+    <button onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 13px', borderRadius: 10, background: active ? ISP.burgundy : 'transparent', color: active ? ISP.card : muted ? ISP.muted : ISP.ink, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 700, transition: 'background .15s' }}
+      onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = `${ISP.sagePale}80` }}
+      onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}>
+      <span>{label}</span>
+      {badge !== undefined && (
+        <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: active ? ISP.ochre : `${ISP.sage}33`, color: active ? ISP.burgundy : ISP.ink }}>{badge}</span>
+      )}
+    </button>
+  )
+}
+
+function BottleRow({ index, value, onChange }: { index: number; value: string; onChange: (v: string) => void }) {
+  const filled = value.trim().length > 0
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14, borderBottom: `1.5px dashed ${filled ? ISP.terracotta : ISP.rule}`, paddingBottom: 12, transition: 'all .2s' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, opacity: filled ? 1 : 0.55, minWidth: 50 }}>
+        <BottleI color={filled ? ISP.burgundy : ISP.muted} size={22} />
+        <span style={{ fontSize: 22, fontWeight: 800, color: filled ? ISP.burgundy : ISP.muted, letterSpacing: '-0.04em', minWidth: 16 }}>{index}</span>
+      </div>
+      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={`ex: ${SAMPLE_DISHES[index - 1]}`} style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', padding: '6px 0', fontFamily: 'inherit', fontSize: 15.5, fontWeight: 600, color: ISP.ink, fontStyle: filled ? 'normal' : 'italic' }} />
+      {filled && (
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: ISP.sage, padding: '4px 9px', borderRadius: 999, background: ISP.sagePale, flexShrink: 0 }}>Prêt</div>
+      )}
+    </div>
+  )
+}
+
+function Step({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
+  return (
+    <li style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      <span style={{ width: 26, height: 26, borderRadius: '50%', background: ISP.sagePale, color: ISP.sage, display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 12.5, flexShrink: 0 }}>{n}</span>
+      <div>
+        <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 2 }}>{title}</div>
+        <div style={{ fontSize: 12.5, color: ISP.muted, lineHeight: 1.5 }}>{children}</div>
+      </div>
+    </li>
+  )
+}
+
 export default function Dashboard() {
   const [plats, setPlats] = useState(['', '', '', '', ''])
   const [stock, setStock] = useState<any[]>([])
@@ -121,14 +162,9 @@ export default function Dashboard() {
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long' })
   const todayCap = today.charAt(0).toUpperCase() + today.slice(1)
 
-  // ─── Formulaire (réutilisé dans les deux layouts)
-  const FormSection = () => (
-    <section style={{
-      background: ISP.card, borderRadius: 18,
-      padding: '28px 32px',
-      boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)',
-      display: 'flex', flexDirection: 'column', gap: 16,
-    }}>
+  // ─── JSX formulaire (variable, pas une fonction — évite le bug de focus)
+  const formSection = (
+    <section style={{ background: ISP.card, borderRadius: 18, padding: '28px 32px', boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)', display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', paddingBottom: 14, borderBottom: `2px solid ${ISP.ink}` }}>
         <div>
           <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: ISP.terracotta, fontWeight: 800 }}>Acte I</div>
@@ -163,99 +199,97 @@ export default function Dashboard() {
     </section>
   )
 
-  // ─── Accords (réutilisé dans les deux layouts)
-  const AccordsSection = () => (
+  // ─── JSX accords (variable, pas une fonction — évite le bug de focus)
+  const accordsSection = resultats ? (
     <section>
-      {loading && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 300, gap: 12 }}>
-          <BottleI color={ISP.burgundy} size={48} />
-          <div style={{ fontSize: 15, fontWeight: 700, color: ISP.burgundy }}>Génération en cours…</div>
-          <div style={{ fontSize: 13, color: ISP.muted }}>15 à 45 secondes selon le nombre de plats</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 800, color: ISP.terracotta, marginBottom: 16 }}>
+        <span style={{ width: 24, height: 1.5, background: ISP.terracotta }} />
+        <span>Acte II · Vos accords</span>
+        <span style={{ flex: 1, height: 1.5, background: `${ISP.terracotta}33` }} />
+      </div>
+
+      {resultats.alertes_stock && resultats.alertes_stock.length > 0 && (
+        <div style={{ background: '#FFF7E0', border: `1.5px solid ${ISP.ochre}`, borderRadius: 14, padding: '18px 22px', marginBottom: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 800, color: '#7A5210', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <span style={{ width: 22, height: 22, borderRadius: '50%', background: ISP.ochre, color: ISP.burgundy, display: 'grid', placeItems: 'center', fontSize: 13 }}>!</span>
+            Alertes stock
+          </div>
+          {resultats.alertes_stock.map((alerte: any, i: number) => (
+            <div key={i} style={{ marginBottom: 10, color: ISP.ink, fontSize: 14 }}>
+              <strong>{alerte.reference}</strong> — {alerte.message}
+              <div style={{ color: ISP.muted, fontSize: 13, marginTop: 2 }}>→ {alerte.action}</div>
+            </div>
+          ))}
         </div>
       )}
 
-      {resultats && (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 800, color: ISP.terracotta, marginBottom: 16 }}>
-            <span style={{ width: 24, height: 1.5, background: ISP.terracotta }} />
-            <span>Acte II · Vos accords</span>
-            <span style={{ flex: 1, height: 1.5, background: `${ISP.terracotta}33` }} />
+      {resultats.accords && resultats.accords.map((accord: any, i: number) => (
+        <article key={i} style={{ background: ISP.card, borderRadius: 18, padding: '26px 30px', marginBottom: 18, boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -18px rgba(60,40,20,.2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 18, marginBottom: 18, borderBottom: `1.5px dashed ${ISP.rule}` }}>
+            <BottleI color={ISP.burgundy} size={26} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: ISP.terracotta, fontWeight: 800 }}>Plat {i + 1}</div>
+              <h3 style={{ fontSize: 22, fontWeight: 800, margin: '2px 0 0', color: ISP.burgundy, letterSpacing: '-0.015em' }}>{accord.plat}</h3>
+            </div>
           </div>
-
-          {resultats.alertes_stock && resultats.alertes_stock.length > 0 && (
-            <div style={{ background: '#FFF7E0', border: `1.5px solid ${ISP.ochre}`, borderRadius: 14, padding: '18px 22px', marginBottom: 22 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, fontWeight: 800, color: '#7A5210', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                <span style={{ width: 22, height: 22, borderRadius: '50%', background: ISP.ochre, color: ISP.burgundy, display: 'grid', placeItems: 'center', fontSize: 13 }}>!</span>
-                Alertes stock
-              </div>
-              {resultats.alertes_stock.map((alerte: any, i: number) => (
-                <div key={i} style={{ marginBottom: 10, color: ISP.ink, fontSize: 14 }}>
-                  <strong>{alerte.reference}</strong> — {alerte.message}
-                  <div style={{ color: ISP.muted, fontSize: 13, marginTop: 2 }}>→ {alerte.action}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, marginBottom: 14 }}>
+            {[
+              { label: 'Accessible', data: accord.accord_accessible, color: ISP.sage },
+              { label: 'Intermédiaire', data: accord.accord_intermediaire, color: ISP.terracotta },
+              { label: 'Prestige', data: accord.accord_prestige, color: ISP.burgundy },
+            ].map(({ label, data, color }) => (
+              <div key={label} style={{ background: ISP.paperWarm, borderRadius: 12, padding: '16px 16px 18px', borderTop: `4px solid ${color}` }}>
+                <div style={{ fontSize: 10.5, fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>{label}</div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: ISP.ink, lineHeight: 1.3 }}>{data?.vin}</div>
+                <div style={{ color: ISP.muted, fontSize: 12, marginTop: 4, fontWeight: 600, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <span>🍷 verre : {data?.prix_verre}</span>
+                  <span style={{ color: ISP.rule }}>·</span>
+                  <span>🍾 bouteille : {data?.prix_bouteille}</span>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {resultats.accords && resultats.accords.map((accord: any, i: number) => (
-            <article key={i} style={{ background: ISP.card, borderRadius: 18, padding: '26px 30px', marginBottom: 18, boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -18px rgba(60,40,20,.2)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingBottom: 18, marginBottom: 18, borderBottom: `1.5px dashed ${ISP.rule}` }}>
-                <BottleI color={ISP.burgundy} size={26} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: ISP.terracotta, fontWeight: 800 }}>Plat {i + 1}</div>
-                  <h3 style={{ fontSize: 22, fontWeight: 800, margin: '2px 0 0', color: ISP.burgundy, letterSpacing: '-0.015em' }}>{accord.plat}</h3>
-                </div>
+                <div style={{ fontSize: 13, fontStyle: 'italic', color: ISP.ink, marginTop: 10, lineHeight: 1.45 }}>« {data?.argument} »</div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, marginBottom: 14 }}>
-                {[
-                  { label: 'Accessible', data: accord.accord_accessible, color: ISP.sage },
-                  { label: 'Intermédiaire', data: accord.accord_intermediaire, color: ISP.terracotta },
-                  { label: 'Prestige', data: accord.accord_prestige, color: ISP.burgundy },
-                ].map(({ label, data, color }) => (
-                  <div key={label} style={{ background: ISP.paperWarm, borderRadius: 12, padding: '16px 16px 18px', borderTop: `4px solid ${color}` }}>
-                    <div style={{ fontSize: 10.5, fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>{label}</div>
-                    <div style={{ fontWeight: 800, fontSize: 15, color: ISP.ink, lineHeight: 1.3 }}>{data?.vin}</div>
-                    <div style={{ color: ISP.muted, fontSize: 13, marginTop: 4, fontWeight: 600 }}>{data?.prix}</div>
-                    <div style={{ fontSize: 13, fontStyle: 'italic', color: ISP.ink, marginTop: 10, lineHeight: 1.45 }}>« {data?.argument} »</div>
-                  </div>
-                ))}
-              </div>
-              {accord.accord_sans_alcool && (
-                <div style={{ background: ISP.sagePale, borderRadius: 12, padding: '14px 18px', display: 'flex', gap: 14, alignItems: 'flex-start', borderLeft: `4px solid ${ISP.sage}` }}>
-                  <div style={{ fontSize: 10.5, fontWeight: 800, color: ISP.sage, textTransform: 'uppercase', letterSpacing: '0.12em', whiteSpace: 'nowrap', paddingTop: 1 }}>Sans alcool</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 800, color: ISP.ink, fontSize: 14.5 }}>{accord.accord_sans_alcool.boisson}</div>
-                    <div style={{ fontSize: 13, fontStyle: 'italic', color: ISP.ink, marginTop: 4, lineHeight: 1.45 }}>« {accord.accord_sans_alcool.argument} »</div>
-                  </div>
-                </div>
-              )}
-            </article>
-          ))}
-
-          {resultats.a_valoriser && resultats.a_valoriser.length > 0 && (
-            <div style={{ background: ISP.burgundy, color: ISP.card, borderRadius: 18, padding: '24px 28px', marginTop: 18, position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', top: -10, right: -10, opacity: 0.08 }}>
-                <BottleI color={ISP.ochre} size={130} />
-              </div>
-              <div style={{ position: 'relative' }}>
-                <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 800, color: ISP.ochre, marginBottom: 12 }}>À valoriser ce soir</div>
-                {resultats.a_valoriser.map((v: any, i: number) => (
-                  <div key={i} style={{ marginBottom: 12, fontSize: 14.5 }}>
-                    <strong>{v.reference}</strong> sur <strong>{v.plat}</strong>
-                    <div style={{ color: ISP.ochreSoft, fontSize: 13, marginTop: 3, fontStyle: 'italic' }}>→ {v.argument}</div>
-                  </div>
-                ))}
+            ))}
+          </div>
+          {accord.accord_sans_alcool && (
+            <div style={{ background: ISP.sagePale, borderRadius: 12, padding: '14px 18px', display: 'flex', gap: 14, alignItems: 'flex-start', borderLeft: `4px solid ${ISP.sage}` }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, color: ISP.sage, textTransform: 'uppercase', letterSpacing: '0.12em', whiteSpace: 'nowrap', paddingTop: 1 }}>Sans alcool</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, color: ISP.ink, fontSize: 14.5 }}>{accord.accord_sans_alcool.boisson}</div>
+                <div style={{ fontSize: 13, fontStyle: 'italic', color: ISP.ink, marginTop: 4, lineHeight: 1.45 }}>« {accord.accord_sans_alcool.argument} »</div>
               </div>
             </div>
           )}
-        </>
+        </article>
+      ))}
+
+      {resultats.a_valoriser && resultats.a_valoriser.length > 0 && (
+        <div style={{ background: ISP.burgundy, color: ISP.card, borderRadius: 18, padding: '24px 28px', marginTop: 18, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: -10, right: -10, opacity: 0.08 }}>
+            <BottleI color={ISP.ochre} size={130} />
+          </div>
+          <div style={{ position: 'relative' }}>
+            <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 800, color: ISP.ochre, marginBottom: 12 }}>À valoriser ce soir</div>
+            {resultats.a_valoriser.map((v: any, i: number) => (
+              <div key={i} style={{ marginBottom: 12, fontSize: 14.5 }}>
+                <strong>{v.reference}</strong> sur <strong>{v.plat}</strong>
+                <div style={{ color: ISP.ochreSoft, fontSize: 13, marginTop: 3, fontStyle: 'italic' }}>→ {v.argument}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </section>
-  )
+  ) : loading ? (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 300, gap: 16 }}>
+      <BottleI color={ISP.burgundy} size={48} />
+      <div style={{ fontSize: 15, fontWeight: 700, color: ISP.burgundy }}>Génération en cours…</div>
+      <div style={{ fontSize: 13, color: ISP.muted }}>15 à 45 secondes selon le nombre de plats</div>
+    </div>
+  ) : null
 
   return (
     <main style={{ background: ISP.paper, minHeight: '100vh', color: ISP.ink }}>
-      {/* ─── Top nav */}
+      {/* Nav */}
       <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 44px', borderBottom: `1px solid ${ISP.rule}`, background: ISP.paper, position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ cursor: 'pointer' }} onClick={() => router.push('/dashboard')}>
           <IspalisLogo size={24} />
@@ -269,19 +303,18 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      {/* ─── LAYOUT : split si accords générés, sinon layout original */}
+      {/* SPLIT SCREEN si accords générés ou en cours */}
       {resultats || loading ? (
-        // SPLIT SCREEN
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.6fr)', gap: 32, padding: '28px 44px 64px', maxWidth: 1440, margin: '0 auto' }}>
           <div style={{ position: 'sticky', top: 80, alignSelf: 'start' }}>
-            <FormSection />
+            {formSection}
           </div>
           <div style={{ overflowY: 'auto' }}>
-            <AccordsSection />
+            {accordsSection}
           </div>
         </div>
       ) : (
-        // LAYOUT ORIGINAL
+        /* LAYOUT ORIGINAL */
         <>
           <header style={{ padding: '32px 44px 8px', maxWidth: 1280, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 800, color: ISP.terracotta }}>
@@ -299,7 +332,7 @@ export default function Dashboard() {
           </header>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: 32, padding: '24px 44px 64px', maxWidth: 1280, margin: '0 auto' }}>
-            <FormSection />
+            {formSection}
             <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ borderRadius: 18, padding: '24px 24px', background: ISP.ochre, color: ISP.burgundy, position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', bottom: -22, right: -10, opacity: 0.18 }}>
@@ -331,46 +364,5 @@ export default function Dashboard() {
         </>
       )}
     </main>
-  )
-}
-
-function NavBtn({ label, badge, active, muted, onClick }: { label: string; badge?: number; active?: boolean; muted?: boolean; onClick?: () => void }) {
-  return (
-    <button onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 13px', borderRadius: 10, background: active ? ISP.burgundy : 'transparent', color: active ? ISP.card : muted ? ISP.muted : ISP.ink, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 700, transition: 'background .15s' }}
-      onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = `${ISP.sagePale}80` }}
-      onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}>
-      <span>{label}</span>
-      {badge !== undefined && (
-        <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: active ? ISP.ochre : `${ISP.sage}33`, color: active ? ISP.burgundy : ISP.ink }}>{badge}</span>
-      )}
-    </button>
-  )
-}
-
-function BottleRow({ index, value, onChange }: { index: number; value: string; onChange: (v: string) => void }) {
-  const filled = value.trim().length > 0
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14, borderBottom: `1.5px dashed ${filled ? ISP.terracotta : ISP.rule}`, paddingBottom: 12, transition: 'all .2s' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, opacity: filled ? 1 : 0.55, minWidth: 50 }}>
-        <BottleI color={filled ? ISP.burgundy : ISP.muted} size={22} />
-        <span style={{ fontSize: 22, fontWeight: 800, color: filled ? ISP.burgundy : ISP.muted, letterSpacing: '-0.04em', minWidth: 16 }}>{index}</span>
-      </div>
-      <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={`ex: ${SAMPLE_DISHES[index - 1]}`} style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', padding: '6px 0', fontFamily: 'inherit', fontSize: 15.5, fontWeight: 600, color: ISP.ink, fontStyle: filled ? 'normal' : 'italic' }} />
-      {filled && (
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: ISP.sage, padding: '4px 9px', borderRadius: 999, background: ISP.sagePale, flexShrink: 0 }}>Prêt</div>
-      )}
-    </div>
-  )
-}
-
-function Step({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
-  return (
-    <li style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-      <span style={{ width: 26, height: 26, borderRadius: '50%', background: ISP.sagePale, color: ISP.sage, display: 'grid', placeItems: 'center', fontWeight: 800, fontSize: 12.5, flexShrink: 0 }}>{n}</span>
-      <div>
-        <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 2 }}>{title}</div>
-        <div style={{ fontSize: 12.5, color: ISP.muted, lineHeight: 1.5 }}>{children}</div>
-      </div>
-    </li>
   )
 }
