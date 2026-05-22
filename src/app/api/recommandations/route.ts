@@ -3,7 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const SYSTEM_PROMPT = `Tu es le sommelier IA d'Ispalis. Reponds UNIQUEMENT en JSON valide sans texte avant ou apres.
+const SYSTEM_PROMPT = `Tu es le sommelier IA d'Ispalis. Reponds UNIQUEMENT en JSON valide sans texte avant ou apres. RÈGLE SANS ALCOOL — IMPORTANT :
+Les suggestions sans alcool doivent être STRICTEMENT non alcoolisées.
+Sont interdits : cidre, bière.
+Sont autorisés : toute forme de boissons normalement alcoolisés mais sans alcool, kombucha, kéfir, eau aromatisée maison, jus de fruits frais, thé glacé, infusion froide, limonade artisanale, lait végétal, bouillon froid, jus de légumes, shrub (vinaigre + fruits), mocktail aux herbes.
+Toujours préciser "artisanal" ou "maison" pour valoriser la suggestion.
 Structure exacte pour UN seul plat :
 {
   "plat": "nom exact",
