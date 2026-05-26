@@ -57,6 +57,7 @@ export default function Service() {
   const [loading, setLoading] = useState(true)
   const [dateMenu, setDateMenu] = useState('')
   const [accordOuvert, setAccordOuvert] = useState<number | null>(null)
+  const [recherche, setRecherche] = useState('')
   const supabase = createClient()
   const router = useRouter()
 
@@ -103,7 +104,16 @@ export default function Service() {
         <div style={{ fontSize: 12, color: ISP.muted, textTransform: 'capitalize', marginBottom: 16, fontWeight: 600 }}>
           {today}
         </div>
-
+<div style={{ position: 'relative', marginBottom: 16 }}>
+  <input
+    type="text"
+    placeholder="Rechercher un plat..."
+    value={recherche}
+    onChange={e => setRecherche(e.target.value)}
+    style={{ width: '100%', padding: '10px 16px 10px 36px', borderRadius: 10, border: `1px solid ${ISP.rule}`, background: ISP.card, fontFamily: 'inherit', fontSize: 14, color: ISP.ink, outline: 'none', boxSizing: 'border-box' as const }}
+  />
+  <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: ISP.muted }}>🔍</span>
+</div>
         {/* Alertes */}
         {alertes.length > 0 && <AlertesStock alertes={alertes} />}
 
@@ -123,7 +133,7 @@ export default function Service() {
             </button>
           </div>
         ) : (
-          accords.map((accord: any, i: number) => (
+        accords.filter((accord: any) => accord.plat.toLowerCase().includes(recherche.toLowerCase())).map((accord: any, i: number) => (
             <div key={i} style={{ background: ISP.card, borderRadius: 16, marginBottom: 12, overflow: 'hidden', boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 4px 16px -8px rgba(60,40,20,.2)' }}>
 
               {/* En-tête plat — cliquable pour déplier */}
