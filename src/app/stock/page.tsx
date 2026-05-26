@@ -40,6 +40,17 @@ const labelDuVin = (c: string) => {
     default: return 'Autre'
   }
 }
+const getCategories = (ref: any): string[] => {
+  const nom = (ref.nom_reference || '').toLowerCase()
+  const app = (ref.appellation || '').toLowerCase()
+  const full = `${nom} ${app}`
+  const cats: string[] = []
+  if (['eau', 'jus', 'sirop', 'limonade', 'sodas', 'soda', 'infusion', 'thé', 'kombucha', 'mocktail'].some(k => full.includes(k))) cats.push('sans_alcool')
+  if (['whisky', 'whiskey', 'cognac', 'armagnac', 'calvados', 'rhum', 'gin', 'vodka', 'tequila', 'mezcal', 'eau de vie', 'marc', 'kirsch', 'porto', 'madère', 'rivesaltes', 'banyuls', 'maury', 'pastis', 'chartreuse', 'cointreau', 'liqueur'].some(k => full.includes(k))) cats.push('alcool_fort')
+  if (['bière', 'biere', 'ale', 'lager', 'stout', 'ipa', 'porter', 'pilsner', 'blonde', 'brune', 'blanche', 'ambrée'].some(k => full.includes(k))) cats.push('biere')
+  if (['champagne', 'crémant', 'prosecco', 'cava', 'pétillant', 'effervescent', 'cocktail', 'kir', 'lillet', 'martini', 'porto', 'muscat', 'vermouth'].some(k => full.includes(k)) || ref.couleur === 'effervescent') cats.push('apero')
+  return cats
+}
 
 // ─── Brand mark
 function BottleI({ color = ISP.burgundy, size = 28 }: { color?: string; size?: number }) {
@@ -86,8 +97,19 @@ export default function Stock() {
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState('')
   const [importOK, setImportOK] = useState(false)
-  const [filter, setFilter] = useState<string>('all')
-  const [search, setSearch] = useState('')
+const [filter, setFilter] = useState<string[]>(['all'])
+
+const toggleFilter = (f: string) => {
+  if (f === 'all') { setFilter(['all']); return }
+  setFilter(prev => {
+    const without = prev.filter(x => x !== 'all')
+    if (without.includes(f)) {
+      const next = without.filter(x => x !== f)
+      return next.length === 0 ? ['all'] : next
+    }
+    return [...without, f]
+  })
+}  const [search, setSearch] = useState('')
   const [nom, setNom] = useState('')
   const [appellation, setAppellation] = useState('')
   const [couleur, setCouleur] = useState('rouge')
@@ -185,8 +207,13 @@ export default function Stock() {
   const totalBottles = references.reduce((sum, r) => sum + (r.quantite || 0), 0)
 
   // Filtrage + recherche
-  const filtered = references.filter(r => {
-    if (filter !== 'all' && r.couleur !== filter) return false
+ const filtered = references.filter(r => {
+  if (!filter.includes('all')) {
+    const cats = getCategories(r)
+    const couleurMatch = filter.some(f => ['rouge', 'blanc', 'rose', 'effervescent'].includes(f) && r.couleur === f)
+    const catMatch = filter.some(f => cats.includes(f))
+    if (!couleurMatch && !catMatch) return false
+  }
     if (search.trim()) {
       const q = search.trim().toLowerCase()
       return (r.nom_reference || '').toLowerCase().includes(q)
@@ -479,6 +506,10 @@ export default function Stock() {
                 {(stats.effervescent || 0) > 0 && (
                   <FilterChip label="Eff." active={filter === 'effervescent'} onClick={() => setFilter('effervescent')} count={stats.effervescent || 0} color="#C5B780" />
                 )}
+                <FilterChip label="Sans alcool" active={filter.includes('sans_alcool')} onClick={() => toggleFilter('sans_alcool')} count={references.filter(r => getCategories(r).includes('sans_alcool')).length} color="#7D8A5C" />
+<FilterChip label="Alcools forts" active={filter.includes('alcool_fort')} onClick={() => toggleFilter('alcool_fort')} count={references.filter(r => getCategories(r).includes('alcool_fort')).length} color="#B5613B" />
+<FilterChip label="Bières" active={filter.includes('biere')} onClick={() => toggleFilter('biere')} count={references.filter(r => getCategories(r).includes('biere')).length} color="#D4B85A" />
+<FilterChip label="Apéro" active={filter.includes('apero')} onClick={() => toggleFilter('apero')} count={references.filter(r => getCategories(r).includes('apero')).length} color="#EEA300" />
               </div>
             </div>
           )}
