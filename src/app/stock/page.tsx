@@ -47,8 +47,7 @@ const getCategories = (ref: any): string[] => {
   const cats: string[] = []
   if (['eau', 'jus', 'sirop', 'limonade', 'sodas', 'soda', 'infusion', 'the', 'kombucha', 'mocktail'].some(k => full.includes(k))) cats.push('sans_alcool')
   if (['whisky', 'whiskey', 'cognac', 'armagnac', 'calvados', 'rhum', 'gin', 'vodka', 'tequila', 'mezcal', 'eau de vie', 'marc', 'kirsch', 'porto', 'madere', 'rivesaltes', 'banyuls', 'maury', 'pastis', 'chartreuse', 'cointreau', 'liqueur'].some(k => full.includes(k))) cats.push('alcool_fort')
-  if (['biere', 'ale', 'lager', 'stout', 'ipa', 'porter', 'pilsner', 'blonde', 'brune', 'blanche', 'ambree'].some(k => full.includes(k))) cats.push('biere')
-  if (['champagne', 'cremant', 'prosecco', 'cava', 'petillant', 'effervescent', 'cocktail', 'kir', 'lillet', 'martini', 'porto', 'muscat', 'vermouth'].some(k => full.includes(k)) || ref.couleur === 'effervescent') cats.push('apero')
+if (['bière','biere', ' ale ', 'lager', 'stout', ' ipa', 'porter', 'pilsner', 'biere blonde', 'biere brune', 'biere blanche', 'biere ambree', 'craft beer', 'microbrasserie'].some(k => full.includes(k))) cats.push('biere')  if (['champagne', 'cremant', 'prosecco', 'cava', 'petillant', 'effervescent', 'cocktail', 'kir', 'lillet', 'martini', 'porto', 'muscat', 'vermouth'].some(k => full.includes(k)) || ref.couleur === 'effervescent') cats.push('apero')
   return cats
 }
 
