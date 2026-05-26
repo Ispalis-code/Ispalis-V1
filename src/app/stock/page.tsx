@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
-// ─── Ispalis tokens
 const ISP = {
   burgundy: '#5E1119',
   burgundyDeep: '#3F0B11',
@@ -21,7 +20,6 @@ const ISP = {
   muted: '#7A6A55',
 }
 
-// Couleur visuelle par type de vin
 const couleurDuVin = (c: string) => {
   switch (c) {
     case 'rouge': return ISP.burgundy
@@ -31,6 +29,7 @@ const couleurDuVin = (c: string) => {
     default: return ISP.muted
   }
 }
+
 const labelDuVin = (c: string) => {
   switch (c) {
     case 'rouge': return 'Rouge'
@@ -40,19 +39,19 @@ const labelDuVin = (c: string) => {
     default: return 'Autre'
   }
 }
+
 const getCategories = (ref: any): string[] => {
   const nom = (ref.nom_reference || '').toLowerCase()
   const app = (ref.appellation || '').toLowerCase()
   const full = `${nom} ${app}`
   const cats: string[] = []
-  if (['eau', 'jus', 'sirop', 'limonade', 'sodas', 'soda', 'infusion', 'thé', 'kombucha', 'mocktail'].some(k => full.includes(k))) cats.push('sans_alcool')
-  if (['whisky', 'whiskey', 'cognac', 'armagnac', 'calvados', 'rhum', 'gin', 'vodka', 'tequila', 'mezcal', 'eau de vie', 'marc', 'kirsch', 'porto', 'madère', 'rivesaltes', 'banyuls', 'maury', 'pastis', 'chartreuse', 'cointreau', 'liqueur'].some(k => full.includes(k))) cats.push('alcool_fort')
-  if (['bière', 'biere', 'ale', 'lager', 'stout', 'ipa', 'porter', 'pilsner', 'blonde', 'brune', 'blanche', 'ambrée'].some(k => full.includes(k))) cats.push('biere')
-  if (['champagne', 'crémant', 'prosecco', 'cava', 'pétillant', 'effervescent', 'cocktail', 'kir', 'lillet', 'martini', 'porto', 'muscat', 'vermouth'].some(k => full.includes(k)) || ref.couleur === 'effervescent') cats.push('apero')
+  if (['eau', 'jus', 'sirop', 'limonade', 'sodas', 'soda', 'infusion', 'the', 'kombucha', 'mocktail'].some(k => full.includes(k))) cats.push('sans_alcool')
+  if (['whisky', 'whiskey', 'cognac', 'armagnac', 'calvados', 'rhum', 'gin', 'vodka', 'tequila', 'mezcal', 'eau de vie', 'marc', 'kirsch', 'porto', 'madere', 'rivesaltes', 'banyuls', 'maury', 'pastis', 'chartreuse', 'cointreau', 'liqueur'].some(k => full.includes(k))) cats.push('alcool_fort')
+  if (['biere', 'ale', 'lager', 'stout', 'ipa', 'porter', 'pilsner', 'blonde', 'brune', 'blanche', 'ambree'].some(k => full.includes(k))) cats.push('biere')
+  if (['champagne', 'cremant', 'prosecco', 'cava', 'petillant', 'effervescent', 'cocktail', 'kir', 'lillet', 'martini', 'porto', 'muscat', 'vermouth'].some(k => full.includes(k)) || ref.couleur === 'effervescent') cats.push('apero')
   return cats
 }
 
-// ─── Brand mark
 function BottleI({ color = ISP.burgundy, size = 28 }: { color?: string; size?: number }) {
   return (
     <svg width={size * 0.42} height={size} viewBox="0 0 42 100" style={{ display: 'block', flexShrink: 0 }}>
@@ -64,10 +63,7 @@ function BottleI({ color = ISP.burgundy, size = 28 }: { color?: string; size?: n
 
 function IspalisLogo({ color = ISP.burgundy, dot = ISP.ochre, size = 26 }: { color?: string; dot?: string; size?: number }) {
   return (
-    <div style={{
-      display: 'inline-flex', alignItems: 'center', gap: size * 0.18,
-      fontWeight: 800, fontSize: size, color, letterSpacing: '-0.01em', lineHeight: 1,
-    }}>
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: size * 0.18, fontWeight: 800, fontSize: size, color, letterSpacing: '-0.01em', lineHeight: 1 }}>
       <span style={{ width: size * 0.22, height: size * 0.22, borderRadius: '50%', background: dot, flexShrink: 0 }} />
       <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: size * 0.04 }}>
         <BottleI color={color} size={size * 1.05} />
@@ -84,6 +80,7 @@ const PlusIcon = ({ size = 14 }: { size?: number }) => (
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
 )
+
 const TrashIcon = ({ size = 14 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="3 6 5 6 21 6" />
@@ -91,26 +88,100 @@ const TrashIcon = ({ size = 14 }: { size?: number }) => (
   </svg>
 )
 
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '10px 12px',
+  border: `1.5px solid ${ISP.rule}`, borderRadius: 10,
+  fontFamily: 'inherit', fontSize: 13.5, color: ISP.ink,
+  backgroundColor: ISP.card, outline: 'none',
+  fontWeight: 500, transition: 'border-color .15s',
+  boxSizing: 'border-box',
+}
+
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <label style={{ display: 'block' }}>
+      <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: ISP.muted, marginBottom: 6 }}>
+        {label}{required && <span style={{ color: ISP.terracotta }}> *</span>}
+      </div>
+      {children}
+    </label>
+  )
+}
+
+function NavBtn({ label, badge, active, muted, onClick }: { label: string; badge?: number; active?: boolean; muted?: boolean; onClick?: () => void }) {
+  return (
+    <button onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '8px 13px', borderRadius: 10, background: active ? ISP.burgundy : 'transparent', color: active ? ISP.card : muted ? ISP.muted : ISP.ink, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 700, transition: 'background .15s' }}
+      onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = `${ISP.sagePale}80` }}
+      onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}>
+      <span>{label}</span>
+      {badge !== undefined && (
+        <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 7px', borderRadius: 999, background: active ? ISP.ochre : `${ISP.sage}33`, color: active ? ISP.burgundy : ISP.ink }}>{badge}</span>
+      )}
+    </button>
+  )
+}
+
+function StatCard({ label, value, accent, big, dot }: { label: string; value: number; accent: string; big?: boolean; dot?: boolean }) {
+  return (
+    <div style={{ background: ISP.card, borderRadius: 14, padding: '16px 18px', borderTop: `4px solid ${accent}`, boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 6px 18px -12px rgba(60,40,20,.15)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10.5, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: ISP.muted }}>
+        {dot && <span style={{ width: 8, height: 8, borderRadius: '50%', background: accent }} />}
+        {label}
+      </div>
+      <div style={{ fontSize: big ? 36 : 30, fontWeight: 800, letterSpacing: '-0.03em', color: ISP.ink, marginTop: 4, lineHeight: 1 }}>{value}</div>
+    </div>
+  )
+}
+
+function FilterChip({ label, count, active, color, onClick }: { label: string; count: number; active?: boolean; color?: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 11px', borderRadius: 999, background: active ? ISP.ink : ISP.paperWarm, color: active ? ISP.card : ISP.ink, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, transition: 'all .15s' }}>
+      {color && <span style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />}
+      {label}
+      <span style={{ fontSize: 10.5, fontWeight: 800, opacity: active ? 0.7 : 0.5 }}>{count}</span>
+    </button>
+  )
+}
+
+function RefRow({ refData, onDelete }: { refData: any; onDelete: () => void }) {
+  const c = couleurDuVin(refData.couleur)
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 12, background: ISP.paperWarm, border: `1px solid ${ISP.rule}` }}>
+      <div style={{ flexShrink: 0 }}><BottleI color={c} size={28} /></div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' as const }}>
+          <div style={{ fontSize: 14.5, fontWeight: 800, color: ISP.ink, letterSpacing: '-0.005em', lineHeight: 1.25 }}>{refData.nom_reference}</div>
+          {refData.millesime && <span style={{ fontSize: 11.5, fontWeight: 800, color: ISP.muted }}>· {refData.millesime}</span>}
+        </div>
+        <div style={{ fontSize: 12, color: ISP.muted, marginTop: 2, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
+          {refData.appellation && <span>{refData.appellation}</span>}
+          {refData.appellation && <span style={{ opacity: 0.4 }}>·</span>}
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700, color: c }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: c }} />
+            {labelDuVin(refData.couleur)}
+          </span>
+        </div>
+      </div>
+      <div style={{ flexShrink: 0, background: ISP.card, borderRadius: 8, padding: '6px 11px', textAlign: 'center' as const, minWidth: 56, border: `1px solid ${ISP.rule}` }}>
+        <div style={{ fontSize: 18, fontWeight: 800, color: ISP.burgundy, letterSpacing: '-0.02em', lineHeight: 1 }}>{refData.quantite}</div>
+        <div style={{ fontSize: 9, fontWeight: 700, color: ISP.muted, letterSpacing: '0.06em', textTransform: 'uppercase' as const, marginTop: 2 }}>bouteilles</div>
+      </div>
+      <button onClick={onDelete} style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 8, border: 'none', background: 'transparent', color: ISP.muted, cursor: 'pointer', display: 'grid', placeItems: 'center', transition: 'all .15s' }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `${ISP.burgundy}15`; (e.currentTarget as HTMLButtonElement).style.color = ISP.burgundy }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = ISP.muted }}>
+        <TrashIcon size={15} />
+      </button>
+    </div>
+  )
+}
+
 export default function Stock() {
   const [references, setReferences] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState('')
   const [importOK, setImportOK] = useState(false)
-const [filter, setFilter] = useState<string[]>(['all'])
-
-const toggleFilter = (f: string) => {
-  if (f === 'all') { setFilter(['all']); return }
-  setFilter(prev => {
-    const without = prev.filter(x => x !== 'all')
-    if (without.includes(f)) {
-      const next = without.filter(x => x !== f)
-      return next.length === 0 ? ['all'] : next
-    }
-    return [...without, f]
-  })
-}  
-  
+  const [filter, setFilter] = useState<string[]>(['all'])
   const [search, setSearch] = useState('')
   const [nom, setNom] = useState('')
   const [appellation, setAppellation] = useState('')
@@ -120,6 +191,18 @@ const toggleFilter = (f: string) => {
   const fileRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
   const router = useRouter()
+
+  const toggleFilter = (f: string) => {
+    if (f === 'all') { setFilter(['all']); return }
+    setFilter(prev => {
+      const without = prev.filter(x => x !== 'all')
+      if (without.includes(f)) {
+        const next = without.filter(x => x !== f)
+        return next.length === 0 ? ['all'] : next
+      }
+      return [...without, f]
+    })
+  }
 
   useEffect(() => { chargerStock() }, [])
 
@@ -136,10 +219,7 @@ const toggleFilter = (f: string) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     await supabase.from('stocks').insert({
-      user_id: user.id,
-      nom_reference: nom,
-      appellation,
-      couleur,
+      user_id: user.id, nom_reference: nom, appellation, couleur,
       quantite: parseInt(quantite),
       millesime: millesime ? parseInt(millesime) : null,
       derniere_vente: new Date().toISOString().split('T')[0]
@@ -171,8 +251,7 @@ const toggleFilter = (f: string) => {
       const qty = parseInt(row['quantite'] || row['quantity'] || row['qty'] || values[4] || '1')
       if (!nomRef) { errors++; continue }
       const { error } = await supabase.from('stocks').insert({
-        user_id: user.id,
-        nom_reference: nomRef,
+        user_id: user.id, nom_reference: nomRef,
         appellation: row['appellation'] || values[1] || '',
         couleur: row['couleur'] || row['color'] || values[2] || 'rouge',
         millesime: parseInt(row['millesime'] || row['vintage'] || values[3]) || null,
@@ -181,7 +260,7 @@ const toggleFilter = (f: string) => {
       })
       if (error) { errors++ } else { imported++ }
     }
-    setImportMsg(`${imported} références importées${errors > 0 ? ` (${errors} erreurs ignorées)` : ''}`)
+    setImportMsg(`${imported} references importees${errors > 0 ? ` (${errors} erreurs ignorees)` : ''}`)
     setImportOK(imported > 0)
     await chargerStock()
     setImporting(false)
@@ -194,44 +273,37 @@ const toggleFilter = (f: string) => {
   }
 
   const viderStock = async () => {
-    if (!confirm('Supprimer toutes les références de votre cave ?')) return
+    if (!confirm('Supprimer toutes les references de votre cave ?')) return
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     await supabase.from('stocks').delete().eq('user_id', user.id)
     await chargerStock()
   }
 
-  // Stats par couleur
   const stats = references.reduce((acc, r) => {
     acc[r.couleur] = (acc[r.couleur] || 0) + 1
     return acc
   }, {} as Record<string, number>)
+
   const totalBottles = references.reduce((sum, r) => sum + (r.quantite || 0), 0)
 
-  // Filtrage + recherche
- const filtered = references.filter(r => {
-  if (!filter.includes('all')) {
-    const cats = getCategories(r)
-    const couleurMatch = filter.some(f => ['rouge', 'blanc', 'rose', 'effervescent'].includes(f) && r.couleur === f)
-    const catMatch = filter.some(f => cats.includes(f))
-    if (!couleurMatch && !catMatch) return false
-  }
+  const filtered = references.filter(r => {
+    if (!filter.includes('all')) {
+      const cats = getCategories(r)
+      const couleurMatch = filter.some(f => ['rouge', 'blanc', 'rose', 'effervescent'].includes(f) && r.couleur === f)
+      const catMatch = filter.some(f => cats.includes(f))
+      if (!couleurMatch && !catMatch) return false
+    }
     if (search.trim()) {
       const q = search.trim().toLowerCase()
-      return (r.nom_reference || '').toLowerCase().includes(q)
-        || (r.appellation || '').toLowerCase().includes(q)
+      return (r.nom_reference || '').toLowerCase().includes(q) || (r.appellation || '').toLowerCase().includes(q)
     }
     return true
   })
 
   return (
     <main style={{ background: ISP.paper, minHeight: '100vh', color: ISP.ink }}>
-      {/* ─── Top nav */}
-      <nav style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '20px 44px', borderBottom: `1px solid ${ISP.rule}`,
-        background: ISP.paper, position: 'sticky', top: 0, zIndex: 10,
-      }}>
+      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 44px', borderBottom: `1px solid ${ISP.rule}`, background: ISP.paper, position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ cursor: 'pointer' }} onClick={() => router.push('/dashboard')}>
           <IspalisLogo size={24} />
         </div>
@@ -239,313 +311,135 @@ const toggleFilter = (f: string) => {
           <NavBtn label="Accords" onClick={() => router.push('/dashboard')} />
           <NavBtn label="Carte" onClick={() => router.push('/carte')} />
           <NavBtn label="Cave" badge={references.length || undefined} active />
-          <NavBtn label="Paramètres" onClick={() => router.push('/parametres')} />
+          <NavBtn label="Parametres" onClick={() => router.push('/parametres')} />
         </div>
       </nav>
 
-      {/* ─── Editorial hero */}
       <header style={{ padding: '32px 44px 8px', maxWidth: 1280, margin: '0 auto' }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 14,
-          fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase',
-          fontWeight: 800, color: ISP.terracotta,
-        }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase' as const, fontWeight: 800, color: ISP.terracotta }}>
           <span style={{ width: 24, height: 1.5, background: ISP.terracotta }} />
           <span>Votre cave</span>
           <span style={{ flex: 1, height: 1.5, background: `${ISP.terracotta}33` }} />
         </div>
-        <h1 style={{
-          margin: '14px 0 0', fontSize: 46, fontWeight: 800,
-          letterSpacing: '-0.025em', lineHeight: 1.02, maxWidth: '22ch',
-        }}>
-          Vos références,{' '}
-          <span style={{ color: ISP.terracotta, fontStyle: 'italic' }}>au cœur</span> des accords.
+        <h1 style={{ margin: '14px 0 0', fontSize: 46, fontWeight: 800, letterSpacing: '-0.025em', lineHeight: 1.02, maxWidth: '22ch' }}>
+          Vos references,{' '}
+          <span style={{ color: ISP.terracotta, fontStyle: 'italic' }}>au coeur</span> des accords.
         </h1>
-        <p style={{
-          marginTop: 12, fontSize: 15, color: ISP.muted, maxWidth: 600,
-          lineHeight: 1.55,
-        }}>
-          Ispalis pioche en priorité dans votre cave avant de proposer d&apos;autres références. Tenez-la à jour pour des accords plus pertinents.
+        <p style={{ marginTop: 12, fontSize: 15, color: ISP.muted, maxWidth: 600, lineHeight: 1.55 }}>
+          Ispalis pioche en priorite dans votre cave avant de proposer d&apos;autres references. Tenez-la a jour pour des accords plus pertinents.
         </p>
       </header>
 
-      {/* ─── Stats */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14,
-        padding: '20px 44px 0', maxWidth: 1280, margin: '0 auto',
-      }}>
-        <StatCard
-          label="Références"
-          value={references.length}
-          accent={ISP.burgundy}
-          big
-        />
-        <StatCard
-          label="Bouteilles"
-          value={totalBottles}
-          accent={ISP.terracotta}
-        />
-        <StatCard
-          label="Rouges"
-          value={stats.rouge || 0}
-          accent={ISP.burgundy}
-          dot
-        />
-        <StatCard
-          label="Blancs · Rosés · Eff."
-          value={(stats.blanc || 0) + (stats.rose || 0) + (stats.effervescent || 0)}
-          accent="#D4B85A"
-          dot
-        />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 14, padding: '20px 44px 0', maxWidth: 1280, margin: '0 auto' }}>
+        <StatCard label="References" value={references.length} accent={ISP.burgundy} big />
+        <StatCard label="Bouteilles" value={totalBottles} accent={ISP.terracotta} />
+        <StatCard label="Rouges" value={stats.rouge || 0} accent={ISP.burgundy} dot />
+        <StatCard label="Blancs · Roses · Eff." value={(stats.blanc || 0) + (stats.rose || 0) + (stats.effervescent || 0)} accent="#D4B85A" dot />
       </div>
 
-      {/* ─── Two-column body */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: 'minmax(0, 0.85fr) minmax(0, 1.15fr)', gap: 24,
-        padding: '24px 44px 32px', maxWidth: 1280, margin: '0 auto',
-      }}>
-        {/* Left: Add reference + import CSV */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 0.85fr) minmax(0, 1.15fr)', gap: 24, padding: '24px 44px 32px', maxWidth: 1280, margin: '0 auto' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <section style={{
-            background: ISP.card, borderRadius: 18,
-            padding: '26px 28px',
-            boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)',
-            display: 'flex', flexDirection: 'column', gap: 14,
-          }}>
-            <div style={{
-              paddingBottom: 12, borderBottom: `2px solid ${ISP.ink}`,
-            }}>
-              <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: ISP.terracotta, fontWeight: 800 }}>
-                Méthode 1
-              </div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, margin: '4px 0 0', letterSpacing: '-0.01em' }}>
-                Ajouter une référence
-              </h2>
+          <section style={{ background: ISP.card, borderRadius: 18, padding: '26px 28px', boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ paddingBottom: 12, borderBottom: `2px solid ${ISP.ink}` }}>
+              <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: ISP.terracotta, fontWeight: 800 }}>Methode 1</div>
+              <h2 style={{ fontSize: 20, fontWeight: 800, margin: '4px 0 0', letterSpacing: '-0.01em' }}>Ajouter une reference</h2>
             </div>
-
             <form onSubmit={ajouterReference} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <Field label="Nom de la référence" required>
-                <input
-                  type="text" value={nom} onChange={e => setNom(e.target.value)} required
-                  placeholder="ex: Château Margaux"
-                  style={inputStyle}
-                />
+              <Field label="Nom de la reference" required>
+                <input type="text" value={nom} onChange={e => setNom(e.target.value)} required placeholder="ex: Chateau Margaux" style={inputStyle} />
               </Field>
               <Field label="Appellation">
-                <input
-                  type="text" value={appellation} onChange={e => setAppellation(e.target.value)}
-                  placeholder="ex: Margaux AOC"
-                  style={inputStyle}
-                />
+                <input type="text" value={appellation} onChange={e => setAppellation(e.target.value)} placeholder="ex: Margaux AOC" style={inputStyle} />
               </Field>
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <Field label="Couleur" required>
-                  <select
-                    value={couleur} onChange={e => setCouleur(e.target.value)}
-                    style={{ ...inputStyle, cursor: 'pointer' }}
-                  >
+                  <select value={couleur} onChange={e => setCouleur(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
                     <option value="rouge">Rouge</option>
                     <option value="blanc">Blanc</option>
-                    <option value="rose">Rosé</option>
+                    <option value="rose">Rose</option>
                     <option value="effervescent">Effervescent</option>
                     <option value="autre">Autre</option>
                   </select>
                 </Field>
-                <Field label="Millésime">
-                  <input
-                    type="number" value={millesime} onChange={e => setMillesime(e.target.value)}
-                    placeholder="ex: 2021"
-                    style={inputStyle}
-                  />
+                <Field label="Millesime">
+                  <input type="number" value={millesime} onChange={e => setMillesime(e.target.value)} placeholder="ex: 2021" style={inputStyle} />
                 </Field>
               </div>
-
-              <Field label="Quantité (bouteilles)" required>
-                <input
-                  type="number" value={quantite} onChange={e => setQuantite(e.target.value)} required min="1"
-                  placeholder="ex: 12"
-                  style={inputStyle}
-                />
+              <Field label="Quantite (bouteilles)" required>
+                <input type="number" value={quantite} onChange={e => setQuantite(e.target.value)} required min="1" placeholder="ex: 12" style={inputStyle} />
               </Field>
-
-              <button
-                type="submit" disabled={loading}
-                style={{
-                  marginTop: 4,
-                  background: loading ? ISP.muted : ISP.burgundy,
-                  color: ISP.card, border: 'none', borderRadius: 12,
-                  padding: '14px 20px',
-                  fontFamily: 'inherit', fontWeight: 800, fontSize: 14.5,
-                  cursor: loading ? 'wait' : 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  boxShadow: '0 8px 20px -10px rgba(94,17,25,.4)',
-                  letterSpacing: '-0.005em',
-                }}
-              >
+              <button type="submit" disabled={loading} style={{ marginTop: 4, background: loading ? ISP.muted : ISP.burgundy, color: ISP.card, border: 'none', borderRadius: 12, padding: '14px 20px', fontFamily: 'inherit', fontWeight: 800, fontSize: 14.5, cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, boxShadow: '0 8px 20px -10px rgba(94,17,25,.4)', letterSpacing: '-0.005em' }}>
                 <PlusIcon size={14} />
-                {loading ? 'Ajout…' : 'Ajouter au stock'}
+                {loading ? 'Ajout...' : 'Ajouter au stock'}
               </button>
             </form>
           </section>
 
-          {/* Import CSV */}
-          <section style={{
-            background: ISP.card, borderRadius: 18,
-            padding: '24px 28px',
-            border: `1.5px solid ${ISP.rule}`,
-          }}>
-            <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: ISP.terracotta, fontWeight: 800 }}>
-              Méthode 2
-            </div>
-            <h3 style={{ fontSize: 17, fontWeight: 800, margin: '4px 0 8px', letterSpacing: '-0.01em' }}>
-              Importer un CSV
-            </h3>
+          <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', border: `1.5px solid ${ISP.rule}` }}>
+            <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: ISP.terracotta, fontWeight: 800 }}>Methode 2</div>
+            <h3 style={{ fontSize: 17, fontWeight: 800, margin: '4px 0 8px', letterSpacing: '-0.01em' }}>Importer un CSV</h3>
             <p style={{ fontSize: 12.5, color: ISP.muted, margin: '0 0 12px', lineHeight: 1.55 }}>
               Colonnes attendues :<br />
-              <code style={{
-                display: 'inline-block', marginTop: 4,
-                background: ISP.paperWarm, padding: '3px 7px', borderRadius: 5,
-                fontSize: 11.5, color: ISP.burgundy, fontFamily: 'ui-monospace, monospace',
-              }}>
+              <code style={{ display: 'inline-block', marginTop: 4, background: ISP.paperWarm, padding: '3px 7px', borderRadius: 5, fontSize: 11.5, color: ISP.burgundy, fontFamily: 'ui-monospace, monospace' }}>
                 nom_reference, appellation, couleur, millesime, quantite
               </code>
             </p>
-
-            <label style={{
-              display: 'block', padding: '14px 16px', borderRadius: 10,
-              border: `2px dashed ${importing ? ISP.terracotta : ISP.rule}`,
-              background: importing ? `${ISP.terracotta}10` : ISP.paperWarm,
-              cursor: importing ? 'wait' : 'pointer',
-              textAlign: 'center',
-              transition: 'all .2s',
-            }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: ISP.ink }}>
-                {importing ? 'Import en cours…' : 'Cliquez pour choisir un fichier .csv'}
-              </div>
-              <input
-                ref={fileRef} type="file" accept=".csv,.txt"
-                onChange={importerCSV} disabled={importing}
-                style={{ display: 'none' }}
-              />
+            <label style={{ display: 'block', padding: '14px 16px', borderRadius: 10, border: `2px dashed ${importing ? ISP.terracotta : ISP.rule}`, background: importing ? `${ISP.terracotta}10` : ISP.paperWarm, cursor: importing ? 'wait' : 'pointer', textAlign: 'center' as const, transition: 'all .2s' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: ISP.ink }}>{importing ? 'Import en cours...' : 'Cliquez pour choisir un fichier .csv'}</div>
+              <input ref={fileRef} type="file" accept=".csv,.txt" onChange={importerCSV} disabled={importing} style={{ display: 'none' }} />
             </label>
-
             {importMsg && (
-              <div style={{
-                marginTop: 10, padding: '8px 12px', borderRadius: 8,
-                background: importOK ? ISP.sagePale : '#FBE9EB',
-                color: importOK ? ISP.sage : ISP.burgundy,
-                fontSize: 12.5, fontWeight: 700,
-                display: 'flex', alignItems: 'center', gap: 8,
-              }}>
-                <span style={{
-                  width: 16, height: 16, borderRadius: '50%',
-                  background: importOK ? ISP.sage : ISP.burgundy,
-                  color: '#fff',
-                  display: 'grid', placeItems: 'center', fontSize: 10, flexShrink: 0,
-                }}>{importOK ? '✓' : '!'}</span>
+              <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: importOK ? ISP.sagePale : '#FBE9EB', color: importOK ? ISP.sage : ISP.burgundy, fontSize: 12.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 16, height: 16, borderRadius: '50%', background: importOK ? ISP.sage : ISP.burgundy, color: '#fff', display: 'grid', placeItems: 'center', fontSize: 10, flexShrink: 0 }}>{importOK ? '✓' : '!'}</span>
                 {importMsg}
               </div>
             )}
           </section>
         </div>
 
-        {/* Right: cave list */}
-        <section style={{
-          background: ISP.card, borderRadius: 18,
-          padding: '24px 28px',
-          boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)',
-          display: 'flex', flexDirection: 'column', gap: 14,
-          minWidth: 0,
-        }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            gap: 12, flexWrap: 'wrap',
-            paddingBottom: 12, borderBottom: `2px solid ${ISP.ink}`,
-          }}>
+        <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)', display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' as const, paddingBottom: 12, borderBottom: `2px solid ${ISP.ink}` }}>
             <div>
-              <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: ISP.terracotta, fontWeight: 800 }}>
-                {references.length} référence{references.length > 1 ? 's' : ''}
-              </div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, margin: '4px 0 0', letterSpacing: '-0.01em' }}>
-                Votre cave
-              </h2>
+              <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: ISP.terracotta, fontWeight: 800 }}>{references.length} reference{references.length > 1 ? 's' : ''}</div>
+              <h2 style={{ fontSize: 20, fontWeight: 800, margin: '4px 0 0', letterSpacing: '-0.01em' }}>Votre cave</h2>
             </div>
             {references.length > 0 && (
-              <button
-                onClick={viderStock}
-                style={{
-                  fontSize: 11.5, fontWeight: 700,
-                  color: ISP.muted,
-                  background: 'transparent', border: `1px solid ${ISP.rule}`,
-                  borderRadius: 8, padding: '6px 12px', cursor: 'pointer',
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                }}
-              >
+              <button onClick={viderStock} style={{ fontSize: 11.5, fontWeight: 700, color: ISP.muted, background: 'transparent', border: `1px solid ${ISP.rule}`, borderRadius: 8, padding: '6px 12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <TrashIcon size={12} />
                 Tout supprimer
               </button>
             )}
           </div>
 
-          {/* Search + filters */}
           {references.length > 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <input
-                type="text" value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Rechercher dans votre cave…"
-                style={{
-                  ...inputStyle,
-                  background: ISP.paperWarm,
-                }}
-              />
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <FilterChip label="Toutes" active={filter === 'all'} onClick={() => setFilter('all')} count={references.length} />
-                <FilterChip label="Rouges" active={filter === 'rouge'} onClick={() => setFilter('rouge')} count={stats.rouge || 0} color={ISP.burgundy} />
-                <FilterChip label="Blancs" active={filter === 'blanc'} onClick={() => setFilter('blanc')} count={stats.blanc || 0} color="#D4B85A" />
-                <FilterChip label="Rosés" active={filter === 'rose'} onClick={() => setFilter('rose')} count={stats.rose || 0} color="#E8A0A0" />
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher dans votre cave..." style={{ ...inputStyle, background: ISP.paperWarm }} />
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
+                <FilterChip label="Toutes" active={filter.includes('all')} onClick={() => toggleFilter('all')} count={references.length} />
+                <FilterChip label="Rouges" active={filter.includes('rouge')} onClick={() => toggleFilter('rouge')} count={stats.rouge || 0} color={ISP.burgundy} />
+                <FilterChip label="Blancs" active={filter.includes('blanc')} onClick={() => toggleFilter('blanc')} count={stats.blanc || 0} color="#D4B85A" />
+                <FilterChip label="Roses" active={filter.includes('rose')} onClick={() => toggleFilter('rose')} count={stats.rose || 0} color="#E8A0A0" />
                 {(stats.effervescent || 0) > 0 && (
-                  <FilterChip label="Eff." active={filter === 'effervescent'} onClick={() => setFilter('effervescent')} count={stats.effervescent || 0} color="#C5B780" />
+                  <FilterChip label="Eff." active={filter.includes('effervescent')} onClick={() => toggleFilter('effervescent')} count={stats.effervescent || 0} color="#C5B780" />
                 )}
-                <FilterChip label="Sans alcool" active={filter.includes('sans_alcool')} onClick={() => toggleFilter('sans_alcool')} count={references.filter(r => getCategories(r).includes('sans_alcool')).length} color="#7D8A5C" />
-<FilterChip label="Alcools forts" active={filter.includes('alcool_fort')} onClick={() => toggleFilter('alcool_fort')} count={references.filter(r => getCategories(r).includes('alcool_fort')).length} color="#B5613B" />
-<FilterChip label="Bières" active={filter.includes('biere')} onClick={() => toggleFilter('biere')} count={references.filter(r => getCategories(r).includes('biere')).length} color="#D4B85A" />
-<FilterChip label="Apéro" active={filter.includes('apero')} onClick={() => toggleFilter('apero')} count={references.filter(r => getCategories(r).includes('apero')).length} color="#EEA300" />
+                <FilterChip label="Sans alcool" active={filter.includes('sans_alcool')} onClick={() => toggleFilter('sans_alcool')} count={references.filter(r => getCategories(r).includes('sans_alcool')).length} color={ISP.sage} />
+                <FilterChip label="Alcools forts" active={filter.includes('alcool_fort')} onClick={() => toggleFilter('alcool_fort')} count={references.filter(r => getCategories(r).includes('alcool_fort')).length} color={ISP.terracotta} />
+                <FilterChip label="Bieres" active={filter.includes('biere')} onClick={() => toggleFilter('biere')} count={references.filter(r => getCategories(r).includes('biere')).length} color="#D4B85A" />
+                <FilterChip label="Apero" active={filter.includes('apero')} onClick={() => toggleFilter('apero')} count={references.filter(r => getCategories(r).includes('apero')).length} color={ISP.ochre} />
               </div>
             </div>
           )}
 
-          {/* List */}
           {references.length === 0 ? (
-            <div style={{
-              padding: '40px 20px', borderRadius: 14,
-              background: ISP.paperWarm, textAlign: 'center',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14, opacity: 0.4 }}>
-                <BottleI color={ISP.muted} size={42} />
-              </div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: ISP.ink, marginBottom: 6 }}>
-                Votre cave est vide
-              </div>
-              <div style={{ fontSize: 13, color: ISP.muted, lineHeight: 1.55, maxWidth: 320, margin: '0 auto' }}>
-                Ajoutez votre première référence à gauche, ou importez votre stock depuis un fichier CSV.
-              </div>
+            <div style={{ padding: '40px 20px', borderRadius: 14, background: ISP.paperWarm, textAlign: 'center' as const }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14, opacity: 0.4 }}><BottleI color={ISP.muted} size={42} /></div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: ISP.ink, marginBottom: 6 }}>Votre cave est vide</div>
+              <div style={{ fontSize: 13, color: ISP.muted, lineHeight: 1.55, maxWidth: 320, margin: '0 auto' }}>Ajoutez votre premiere reference a gauche, ou importez votre stock depuis un fichier CSV.</div>
             </div>
           ) : filtered.length === 0 ? (
-            <div style={{
-              padding: '24px 20px', borderRadius: 12,
-              background: ISP.paperWarm, textAlign: 'center',
-              color: ISP.muted, fontSize: 13.5,
-            }}>
-              Aucune référence ne correspond.
-            </div>
+            <div style={{ padding: '24px 20px', borderRadius: 12, background: ISP.paperWarm, textAlign: 'center' as const, color: ISP.muted, fontSize: 13.5 }}>Aucune reference ne correspond.</div>
           ) : (
-            <div style={{
-              display: 'flex', flexDirection: 'column', gap: 8,
-              maxHeight: 560, overflowY: 'auto', paddingRight: 4,
-              margin: '0 -4px',
-            }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 560, overflowY: 'auto', paddingRight: 4, margin: '0 -4px' }}>
               {filtered.map((ref: any) => (
                 <RefRow key={ref.id} refData={ref} onDelete={() => supprimerReference(ref.id)} />
               ))}
@@ -554,217 +448,5 @@ const toggleFilter = (f: string) => {
         </section>
       </div>
     </main>
-  )
-}
-
-// ─── Sub-components
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px',
-  border: `1.5px solid ${ISP.rule}`, borderRadius: 10,
-  fontFamily: 'inherit', fontSize: 13.5, color: ISP.ink,
-  backgroundColor: ISP.card, outline: 'none',
-  fontWeight: 500,
-  transition: 'border-color .15s',
-  boxSizing: 'border-box',
-}
-
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
-  return (
-    <label style={{ display: 'block' }}>
-      <div style={{
-        fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase',
-        color: ISP.muted, marginBottom: 6,
-      }}>
-        {label}{required && <span style={{ color: ISP.terracotta }}> *</span>}
-      </div>
-      {children}
-    </label>
-  )
-}
-
-function NavBtn({ label, badge, active, muted, onClick }: {
-  label: string; badge?: number; active?: boolean; muted?: boolean; onClick?: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 7,
-        padding: '8px 13px', borderRadius: 10,
-        background: active ? ISP.burgundy : 'transparent',
-        color: active ? ISP.card : muted ? ISP.muted : ISP.ink,
-        border: 'none', cursor: 'pointer',
-        fontFamily: 'inherit', fontSize: 13.5, fontWeight: 700,
-        transition: 'background .15s',
-      }}
-      onMouseEnter={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = `${ISP.sagePale}80` }}
-      onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
-    >
-      <span>{label}</span>
-      {badge !== undefined && (
-        <span style={{
-          fontSize: 10.5, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
-          background: active ? ISP.ochre : `${ISP.sage}33`,
-          color: active ? ISP.burgundy : ISP.ink,
-        }}>{badge}</span>
-      )}
-    </button>
-  )
-}
-
-function StatCard({ label, value, accent, big, dot }: {
-  label: string; value: number; accent: string; big?: boolean; dot?: boolean
-}) {
-  return (
-    <div style={{
-      background: ISP.card, borderRadius: 14,
-      padding: '16px 18px',
-      borderTop: `4px solid ${accent}`,
-      boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 6px 18px -12px rgba(60,40,20,.15)',
-    }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        fontSize: 10.5, fontWeight: 800, letterSpacing: '0.12em',
-        textTransform: 'uppercase', color: ISP.muted,
-      }}>
-        {dot && <span style={{ width: 8, height: 8, borderRadius: '50%', background: accent }} />}
-        {label}
-      </div>
-      <div style={{
-        fontSize: big ? 36 : 30, fontWeight: 800,
-        letterSpacing: '-0.03em', color: ISP.ink,
-        marginTop: 4, fontVariantNumeric: 'tabular-nums',
-        lineHeight: 1,
-      }}>
-        {value}
-      </div>
-    </div>
-  )
-}
-
-function FilterChip({ label, count, active, color, onClick }: {
-  label: string; count: number; active?: boolean; color?: string; onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6,
-        padding: '6px 11px', borderRadius: 999,
-        background: active ? ISP.ink : ISP.paperWarm,
-        color: active ? ISP.card : ISP.ink,
-        border: 'none', cursor: 'pointer',
-        fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
-        transition: 'all .15s',
-      }}
-    >
-      {color && <span style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />}
-      {label}
-      <span style={{
-        fontSize: 10.5, fontWeight: 800,
-        opacity: active ? 0.7 : 0.5,
-        fontVariantNumeric: 'tabular-nums',
-      }}>{count}</span>
-    </button>
-  )
-}
-
-function RefRow({ refData, onDelete }: { refData: any; onDelete: () => void }) {
-  const c = couleurDuVin(refData.couleur)
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 12,
-      padding: '10px 12px', borderRadius: 12,
-      background: ISP.paperWarm,
-      border: `1px solid ${ISP.rule}`,
-    }}>
-      {/* Bottle indicator */}
-      <div style={{ flexShrink: 0 }}>
-        <BottleI color={c} size={28} />
-      </div>
-
-      {/* Main info */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-          <div style={{
-            fontSize: 14.5, fontWeight: 800, color: ISP.ink,
-            letterSpacing: '-0.005em', lineHeight: 1.25,
-          }}>
-            {refData.nom_reference}
-          </div>
-          {refData.millesime && (
-            <span style={{
-              fontSize: 11.5, fontWeight: 800, color: ISP.muted,
-              fontVariantNumeric: 'tabular-nums',
-            }}>
-              · {refData.millesime}
-            </span>
-          )}
-        </div>
-        <div style={{
-          fontSize: 12, color: ISP.muted, marginTop: 2,
-          display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-        }}>
-          {refData.appellation && <span>{refData.appellation}</span>}
-          {refData.appellation && <span style={{ opacity: 0.4 }}>·</span>}
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            fontWeight: 700, color: c,
-          }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: c }} />
-            {labelDuVin(refData.couleur)}
-          </span>
-        </div>
-      </div>
-
-      {/* Quantity */}
-      <div style={{
-        flexShrink: 0,
-        background: ISP.card, borderRadius: 8,
-        padding: '6px 11px',
-        textAlign: 'center', minWidth: 56,
-        border: `1px solid ${ISP.rule}`,
-      }}>
-        <div style={{
-          fontSize: 18, fontWeight: 800, color: ISP.burgundy,
-          letterSpacing: '-0.02em', lineHeight: 1,
-          fontVariantNumeric: 'tabular-nums',
-        }}>
-          {refData.quantite}
-        </div>
-        <div style={{
-          fontSize: 9, fontWeight: 700, color: ISP.muted,
-          letterSpacing: '0.06em', textTransform: 'uppercase',
-          marginTop: 2,
-        }}>
-          bouteilles
-        </div>
-      </div>
-
-      {/* Delete */}
-      <button
-        onClick={onDelete}
-        title="Supprimer"
-        style={{
-          flexShrink: 0,
-          width: 30, height: 30, borderRadius: 8,
-          border: 'none', background: 'transparent',
-          color: ISP.muted, cursor: 'pointer',
-          display: 'grid', placeItems: 'center',
-          transition: 'all .15s',
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = `${ISP.burgundy}15`
-          ;(e.currentTarget as HTMLButtonElement).style.color = ISP.burgundy
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
-          ;(e.currentTarget as HTMLButtonElement).style.color = ISP.muted
-        }}
-      >
-        <TrashIcon size={15} />
-      </button>
-    </div>
   )
 }
