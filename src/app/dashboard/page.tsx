@@ -310,6 +310,7 @@ export default function Dashboard() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <NavBtn label="Carte" onClick={() => router.push('/carte')} />
+          <NavBtn label="📱 Service" onClick={() => router.push('/service')} />
           <NavBtn label="Cave" badge={stock.length || undefined} onClick={() => router.push('/stock')} />
           <NavBtn label="Paramètres" onClick={() => router.push('/parametres')} />
           <div style={{ width: 1, height: 22, background: ISP.rule, margin: '0 8px' }} />
