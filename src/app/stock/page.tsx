@@ -41,14 +41,21 @@ const labelDuVin = (c: string) => {
 }
 
 const getCategories = (ref: any): string[] => {
-  const nom = (ref.nom_reference || '').toLowerCase()
-  const app = (ref.appellation || '').toLowerCase()
-  const full = `${nom} ${app}`
   const cats: string[] = []
-  if (['eau', 'jus', 'sirop', 'limonade', 'sodas', 'soda', 'infusion', 'the', 'kombucha', 'mocktail'].some(k => full.includes(k))) cats.push('sans_alcool')
-  if (['whisky', 'whiskey', 'cognac', 'armagnac', 'calvados', 'rhum', 'gin', 'vodka', 'tequila', 'mezcal', 'eau de vie', 'marc', 'kirsch', 'porto', 'madere', 'rivesaltes', 'banyuls', 'maury', 'pastis', 'chartreuse', 'cointreau', 'liqueur'].some(k => full.includes(k))) cats.push('alcool_fort')
-  if (['bière', 'biere', ' ale ', 'lager', 'stout', ' ipa', 'porter', 'pilsner', 'biere blonde', 'biere brune', 'biere blanche', 'biere ambree', 'craft beer', 'microbrasserie'].some(k => full.includes(k))) cats.push('biere')  
-    if (['champagne', 'cremant', 'prosecco', 'cava', 'petillant', 'effervescent', 'cocktail', 'kir', 'lillet', 'martini', 'porto', 'muscat', 'vermouth'].some(k => full.includes(k)) || ref.couleur === 'effervescent') cats.push('apero')
+  const type = ref.type_boisson || 'vin'
+  if (type === 'sans_alcool') cats.push('sans_alcool')
+  if (type === 'spiritueux') cats.push('alcool_fort')
+  if (type === 'biere') cats.push('biere')
+  if (type === 'champagne') { cats.push('apero'); }
+  if (type === 'aperitif') cats.push('apero')
+  // Fallback sur le nom si pas de type
+  const full = `${(ref.nom_reference || '').toLowerCase()} ${(ref.appellation || '').toLowerCase()}`
+  if (cats.length === 0) {
+    if (['whisky','cognac','rhum','gin','vodka','tequila','pastis','liqueur'].some(k => full.includes(k))) cats.push('alcool_fort')
+    if (['biere','lager','stout','ipa'].some(k => full.includes(k))) cats.push('biere')
+    if (['champagne','cremant','prosecco'].some(k => full.includes(k))) cats.push('apero')
+    if (['eau','jus','sirop','kombucha','mocktail'].some(k => full.includes(k))) cats.push('sans_alcool')
+  }
   return cats
 }
 
@@ -186,6 +193,7 @@ export default function Stock() {
   const [nom, setNom] = useState('')
   const [appellation, setAppellation] = useState('')
   const [couleur, setCouleur] = useState('rouge')
+  const [type, setType] = useState('vin')
   const [quantite, setQuantite] = useState('')
   const [millesime, setMillesime] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -220,6 +228,7 @@ export default function Stock() {
     if (!user) return
     await supabase.from('stocks').insert({
       user_id: user.id, nom_reference: nom, appellation, couleur,
+      type_boisson: type,
       quantite: parseInt(quantite),
       millesime: millesime ? parseInt(millesime) : null,
       derniere_vente: new Date().toISOString().split('T')[0]
@@ -254,6 +263,7 @@ export default function Stock() {
         user_id: user.id, nom_reference: nomRef,
         appellation: row['appellation'] || values[1] || '',
         couleur: row['couleur'] || row['color'] || values[2] || 'rouge',
+        type_boisson: row['type_boisson'] || row['type'] || 'vin',
         millesime: parseInt(row['millesime'] || row['vintage'] || values[3]) || null,
         quantite: isNaN(qty) ? 1 : qty,
         derniere_vente: new Date().toISOString().split('T')[0]
@@ -352,6 +362,18 @@ export default function Stock() {
                 <input type="text" value={appellation} onChange={e => setAppellation(e.target.value)} placeholder="ex: Margaux AOC" style={inputStyle} />
               </Field>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <Field label="Type de boisson" required>
+  <select value={type} onChange={e => setType(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+    <option value="vin">Vin</option>
+    <option value="champagne">Champagne / Effervescent</option>
+    <option value="biere">Bière</option>
+    <option value="spiritueux">Spiritueux / Alcool fort</option>
+    <option value="aperitif">Apéritif / Digestif</option>
+    <option value="sans_alcool">Sans alcool</option>
+    <option value="autre">Autre</option>
+  </select>
+</Field>
+                
                 <Field label="Couleur" required>
                   <select value={couleur} onChange={e => setCouleur(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
                     <option value="rouge">Rouge</option>
