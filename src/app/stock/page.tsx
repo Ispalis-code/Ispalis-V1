@@ -109,7 +109,9 @@ const toggleFilter = (f: string) => {
     }
     return [...without, f]
   })
-}  const [search, setSearch] = useState('')
+}  
+  
+  const [search, setSearch] = useState('')
   const [nom, setNom] = useState('')
   const [appellation, setAppellation] = useState('')
   const [couleur, setCouleur] = useState('rouge')
