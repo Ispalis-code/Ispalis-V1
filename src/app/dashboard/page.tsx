@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import Footer from '@/components/Footer'
 
 const ISP = {
   burgundy: '#5E1119',
@@ -378,6 +379,7 @@ export default function Dashboard() {
           </div>
         </>
       )}
+      <Footer />
     </main>
   )
 }
