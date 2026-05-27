@@ -367,7 +367,10 @@ const importerCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
   setImporting(false)
   if (fileRef.current) fileRef.current.value = ''
 }
-
+const stats = references.reduce((acc, r) => {
+  acc[r.couleur] = (acc[r.couleur] || 0) + 1
+  return acc
+}, {} as Record<string, number>)
   const totalBottles = references.reduce((sum, r) => sum + (r.quantite || 0), 0)
 
   const filtered = references.filter(r => {
