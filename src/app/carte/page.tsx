@@ -372,7 +372,7 @@ const toggleParam = (cat: 'types' | 'couleurs' | 'styles', val: string) => {
       {/* Bouton générer */}
       {plats.length > 0 && (
         <div>
-          <button onClick={genererAccords} disabled={loading || platsRemplis === 0} style={{ width: '100%', background: (loading || platsRemplis === 0) ? ISP.muted : ISP.burgundy, color: ISP.card, border: 'none', borderRadius: 14, padding: '18px 24px', fontFamily: 'inherit', fontWeight: 800, fontSize: 16, cursor: (loading || platsRemplis === 0) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, boxShadow: '0 10px 28px -12px rgba(94,17,25,.45)', transition: 'all .2s', letterSpacing: '-0.005em' }}>
+        <button onClick={() => genererAccords()} disabled={loading || platsRemplis === 0} style={{ width: '100%', background: (loading || platsRemplis === 0) ? ISP.muted : ISP.burgundy, color: ISP.card, border: 'none', borderRadius: 14, padding: '18px 24px', fontFamily: 'inherit', fontWeight: 800, fontSize: 16, cursor: (loading || platsRemplis === 0) ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, boxShadow: '0 10px 28px -12px rgba(94,17,25,.45)', transition: 'all .2s', letterSpacing: '-0.005em' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
               <SparkleIcon size={18} color={ISP.ochre} />
               {loading ? 'Génération en cours…' : `Générer les accords pour ${platsRemplis} plat${platsRemplis > 1 ? 's' : ''}`}
