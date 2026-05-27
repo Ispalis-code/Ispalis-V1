@@ -34,7 +34,7 @@ const labelDuVin = (c: string) => {
   switch (c) {
     case 'rouge': return 'Rouge'
     case 'blanc': return 'Blanc'
-    case 'rose': return 'Rosé'
+    case 'rose': return 'Rose'
     case 'effervescent': return 'Effervescent'
     default: return 'Autre'
   }
@@ -46,9 +46,8 @@ const getCategories = (ref: any): string[] => {
   if (type === 'sans_alcool') cats.push('sans_alcool')
   if (type === 'spiritueux') cats.push('alcool_fort')
   if (type === 'biere') cats.push('biere')
-  if (type === 'champagne') { cats.push('apero'); }
+  if (type === 'champagne') cats.push('apero')
   if (type === 'aperitif') cats.push('apero')
-  // Fallback sur le nom si pas de type
   const full = `${(ref.nom_reference || '').toLowerCase()} ${(ref.appellation || '').toLowerCase()}`
   if (cats.length === 0) {
     if (['whisky','cognac','rhum','gin','vodka','tequila','pastis','liqueur'].some(k => full.includes(k))) cats.push('alcool_fort')
@@ -238,139 +237,147 @@ export default function Stock() {
     setLoading(false)
   }
 
-const importerCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0]
-  if (!file) return
+  const supprimerReference = async (id: string) => {
+    await supabase.from('stocks').delete().eq('id', id)
+    await chargerStock()
+  }
 
-  if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+  const viderStock = async () => {
+    if (!confirm('Supprimer toutes les references de votre cave ?')) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.from('stocks').delete().eq('user_id', user.id)
+    await chargerStock()
+  }
+
+  const importerCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      setImporting(true)
+      setImportMsg('')
+      setImportOK(false)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      try {
+        const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.mjs' as any)
+        const buffer = await file.arrayBuffer()
+        const workbook = XLSX.read(buffer, { type: 'array' })
+        const sheet = workbook.Sheets[workbook.SheetNames[0]]
+        const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+        if (rows.length === 0) { setImportMsg('Fichier vide'); setImporting(false); return }
+        const headers = Object.keys(rows[0]).map(k => k.toLowerCase())
+        const isSommit = headers.some(h => h.includes('domaine')) && headers.some(h => h.includes('stock'))
+        let imported = 0
+        let errors = 0
+        for (const row of rows) {
+          const get = (names: string[]) => {
+            for (const n of names) {
+              const key = Object.keys(row).find(k => k.toLowerCase().includes(n))
+              if (key && row[key] !== '') return String(row[key]).trim()
+            }
+            return ''
+          }
+          let nomRef = ''
+          let app = ''
+          let coul = 'rouge'
+          let mill = null as number | null
+          let qty = 1
+          let type_boisson = 'vin'
+          if (isSommit) {
+            const domaine = get(['domaine'])
+            const appellation2 = get(['appellation'])
+            const cuvee = get(['cuvee', 'libelle'])
+            nomRef = [domaine, appellation2, cuvee].filter(Boolean).join(' - ')
+            app = appellation2
+            const couleurRaw = get(['couleur']).toLowerCase()
+            if (couleurRaw.includes('blanc')) coul = 'blanc'
+            else if (couleurRaw.includes('ros')) coul = 'rose'
+            else if (couleurRaw.includes('effervescent') || couleurRaw.includes('bulles') || couleurRaw.includes('champagne')) coul = 'effervescent'
+            else coul = 'rouge'
+            const millRaw = parseInt(get(['millesime', 'vintage', 'annee']))
+            mill = isNaN(millRaw) ? null : millRaw
+            const contenant = get(['contenant']).toLowerCase()
+            if (contenant && !contenant.includes('bouteille')) continue
+            const qtyRaw = parseFloat(get(['stock total', 'stock', 'quantite', 'qty']))
+            qty = isNaN(qtyRaw) || qtyRaw <= 0 ? 0 : Math.round(qtyRaw)
+            if (qty <= 0) continue
+          } else {
+            nomRef = get(['nom_reference', 'nom', 'name', 'vin', 'libelle', 'domaine'])
+            app = get(['appellation', 'aoc', 'region'])
+            const couleurRaw = get(['couleur', 'color', 'type']).toLowerCase()
+            if (couleurRaw.includes('blanc')) coul = 'blanc'
+            else if (couleurRaw.includes('ros')) coul = 'rose'
+            else if (couleurRaw.includes('bulles') || couleurRaw.includes('effervescent') || couleurRaw.includes('champagne')) coul = 'effervescent'
+            else coul = 'rouge'
+            const millRaw = parseInt(get(['millesime', 'vintage', 'annee']))
+            mill = isNaN(millRaw) ? null : millRaw
+            const qtyRaw = parseInt(get(['quantite', 'quantity', 'qty', 'stock']))
+            qty = isNaN(qtyRaw) ? 1 : qtyRaw
+            type_boisson = get(['type_boisson', 'type', 'categorie']) || 'vin'
+          }
+          if (!nomRef) { errors++; continue }
+          const { error } = await supabase.from('stocks').insert({
+            user_id: user.id, nom_reference: nomRef, appellation: app,
+            couleur: coul, millesime: mill, quantite: qty,
+            type_boisson, derniere_vente: new Date().toISOString().split('T')[0]
+          })
+          if (error) { errors++ } else { imported++ }
+        }
+        setImportMsg(`${imported} references importees${errors > 0 ? ` (${errors} ignorees)` : ''}`)
+        setImportOK(imported > 0)
+        await chargerStock()
+      } catch (err) {
+        console.error(err)
+        setImportMsg('Erreur lors de la lecture du fichier Excel')
+        setImportOK(false)
+      }
+      setImporting(false)
+      if (fileRef.current) fileRef.current.value = ''
+      return
+    }
+
     setImporting(true)
     setImportMsg('')
     setImportOK(false)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    try {
-      const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.mjs' as any)
-      const buffer = await file.arrayBuffer()
-      const workbook = XLSX.read(buffer, { type: 'array' })
-      const sheet = workbook.Sheets[workbook.SheetNames[0]]
-      const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' })
-      if (rows.length === 0) { setImportMsg('Fichier vide'); setImporting(false); return }
-      const headers = Object.keys(rows[0]).map(k => k.toLowerCase())
-      const isSommit = headers.some(h => h.includes('domaine')) && headers.some(h => h.includes('stock'))
-      let imported = 0
-      let errors = 0
-      for (const row of rows) {
-        const get = (names: string[]) => {
-          for (const n of names) {
-            const key = Object.keys(row).find(k => k.toLowerCase().includes(n))
-            if (key && row[key] !== '') return String(row[key]).trim()
-          }
-          return ''
-        }
-        let nomRef = ''
-        let appellation = ''
-        let couleur = 'rouge'
-        let millesime = null as number | null
-        let quantite = 1
-        let type_boisson = 'vin'
-        if (isSommit) {
-          const domaine = get(['domaine'])
-          const app = get(['appellation'])
-          const cuvee = get(['cuvée', 'cuvee', 'libellé', 'libelle'])
-          nomRef = [domaine, app, cuvee].filter(Boolean).join(' - ')
-          appellation = app
-          const couleurRaw = get(['couleur']).toLowerCase()
-          if (couleurRaw.includes('blanc')) couleur = 'blanc'
-          else if (couleurRaw.includes('ros')) couleur = 'rose'
-          else if (couleurRaw.includes('effervescent') || couleurRaw.includes('bulles') || couleurRaw.includes('champagne') || couleurRaw.includes('crémant')) couleur = 'effervescent'
-          else couleur = 'rouge'
-          const mill = parseInt(get(['millésime', 'millesime', 'vintage', 'année', 'annee']))
-          millesime = isNaN(mill) ? null : mill
-          const contenant = get(['contenant']).toLowerCase()
-          if (contenant && !contenant.includes('bouteille')) continue
-          const qty = parseFloat(get(['stock total', 'stock', 'quantite', 'quantité', 'qty']))
-          quantite = isNaN(qty) || qty <= 0 ? 0 : Math.round(qty)
-          if (quantite <= 0) continue
-        } else {
-          nomRef = get(['nom_reference', 'nom', 'name', 'vin', 'libelle', 'libellé', 'domaine'])
-          appellation = get(['appellation', 'aoc', 'region', 'région'])
-          const couleurRaw = get(['couleur', 'color', 'type']).toLowerCase()
-          if (couleurRaw.includes('blanc')) couleur = 'blanc'
-          else if (couleurRaw.includes('ros')) couleur = 'rose'
-          else if (couleurRaw.includes('bulles') || couleurRaw.includes('effervescent') || couleurRaw.includes('champagne')) couleur = 'effervescent'
-          else couleur = 'rouge'
-          const mill = parseInt(get(['millesime', 'millésime', 'vintage', 'annee', 'année']))
-          millesime = isNaN(mill) ? null : mill
-          const qty = parseInt(get(['quantite', 'quantité', 'quantity', 'qty', 'stock']))
-          quantite = isNaN(qty) ? 1 : qty
-          type_boisson = get(['type_boisson', 'type', 'categorie', 'catégorie']) || 'vin'
-        }
-        if (!nomRef) { errors++; continue }
-        const { error } = await supabase.from('stocks').insert({
-          user_id: user.id,
-          nom_reference: nomRef,
-          appellation,
-          couleur,
-          millesime,
-          quantite,
-          type_boisson,
-          derniere_vente: new Date().toISOString().split('T')[0]
-        })
-        if (error) { errors++ } else { imported++ }
-      }
-      setImportMsg(`${imported} références importées${errors > 0 ? ` (${errors} ignorées)` : ''}`)
-      setImportOK(imported > 0)
-      await chargerStock()
-    } catch (err) {
-      console.error(err)
-      setImportMsg('Erreur lors de la lecture du fichier Excel')
-      setImportOK(false)
+    const text = await file.text()
+    const lines = text.split('\n').filter(l => l.trim())
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim())
+    let imported = 0
+    let errors = 0
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''))
+      if (values.length < 2) continue
+      const row: any = {}
+      headers.forEach((h, idx) => { row[h] = values[idx] || '' })
+      const nomRef = row['nom_reference'] || row['nom'] || row['name'] || values[0]
+      const qty = parseInt(row['quantite'] || row['quantity'] || row['qty'] || values[4] || '1')
+      if (!nomRef) { errors++; continue }
+      const { error } = await supabase.from('stocks').insert({
+        user_id: user.id, nom_reference: nomRef,
+        appellation: row['appellation'] || values[1] || '',
+        couleur: row['couleur'] || row['color'] || values[2] || 'rouge',
+        millesime: parseInt(row['millesime'] || row['vintage'] || values[3]) || null,
+        quantite: isNaN(qty) ? 1 : qty,
+        derniere_vente: new Date().toISOString().split('T')[0]
+      })
+      if (error) { errors++ } else { imported++ }
     }
+    setImportMsg(`${imported} references importees${errors > 0 ? ` (${errors} erreurs ignorees)` : ''}`)
+    setImportOK(imported > 0)
+    await chargerStock()
     setImporting(false)
     if (fileRef.current) fileRef.current.value = ''
-    return
   }
 
-  // Suite du code CSV existant...
-  setImporting(true)
-  setImportMsg('')
-  setImportOK(false)
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-  const text = await file.text()
-  const lines = text.split('\n').filter(l => l.trim())
-  const headers = lines[0].toLowerCase().split(',').map(h => h.trim())
-  let imported = 0
-  let errors = 0
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''))
-    if (values.length < 2) continue
-    const row: any = {}
-    headers.forEach((h, idx) => { row[h] = values[idx] || '' })
-    const nomRef = row['nom_reference'] || row['nom'] || row['name'] || values[0]
-    const qty = parseInt(row['quantite'] || row['quantity'] || row['qty'] || values[4] || '1')
-    if (!nomRef) { errors++; continue }
-    const { error } = await supabase.from('stocks').insert({
-      user_id: user.id,
-      nom_reference: nomRef,
-      appellation: row['appellation'] || values[1] || '',
-      couleur: row['couleur'] || row['color'] || values[2] || 'rouge',
-      millesime: parseInt(row['millesime'] || row['vintage'] || values[3]) || null,
-      quantite: isNaN(qty) ? 1 : qty,
-      derniere_vente: new Date().toISOString().split('T')[0]
-    })
-    if (error) { errors++ } else { imported++ }
-  }
-  setImportMsg(`${imported} references importees${errors > 0 ? ` (${errors} erreurs ignorees)` : ''}`)
-  setImportOK(imported > 0)
-  await chargerStock()
-  setImporting(false)
-  if (fileRef.current) fileRef.current.value = ''
-}
-const stats = references.reduce((acc, r) => {
-  acc[r.couleur] = (acc[r.couleur] || 0) + 1
-  return acc
-}, {} as Record<string, number>)
+  const stats = references.reduce((acc, r) => {
+    acc[r.couleur] = (acc[r.couleur] || 0) + 1
+    return acc
+  }, {} as Record<string, number>)
+
   const totalBottles = references.reduce((sum, r) => sum + (r.quantite || 0), 0)
 
   const filtered = references.filter(r => {
@@ -439,17 +446,16 @@ const stats = references.reduce((acc, r) => {
               </Field>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <Field label="Type de boisson" required>
-  <select value={type} onChange={e => setType(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
-    <option value="vin">Vin</option>
-    <option value="champagne">Champagne / Effervescent</option>
-    <option value="biere">Bière</option>
-    <option value="spiritueux">Spiritueux / Alcool fort</option>
-    <option value="aperitif">Apéritif / Digestif</option>
-    <option value="sans_alcool">Sans alcool</option>
-    <option value="autre">Autre</option>
-  </select>
-</Field>
-                
+                  <select value={type} onChange={e => setType(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+                    <option value="vin">Vin</option>
+                    <option value="champagne">Champagne / Effervescent</option>
+                    <option value="biere">Biere</option>
+                    <option value="spiritueux">Spiritueux / Alcool fort</option>
+                    <option value="aperitif">Aperitif / Digestif</option>
+                    <option value="sans_alcool">Sans alcool</option>
+                    <option value="autre">Autre</option>
+                  </select>
+                </Field>
                 <Field label="Couleur" required>
                   <select value={couleur} onChange={e => setCouleur(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
                     <option value="rouge">Rouge</option>
@@ -459,10 +465,10 @@ const stats = references.reduce((acc, r) => {
                     <option value="autre">Autre</option>
                   </select>
                 </Field>
-                <Field label="Millesime">
-                  <input type="number" value={millesime} onChange={e => setMillesime(e.target.value)} placeholder="ex: 2021" style={inputStyle} />
-                </Field>
               </div>
+              <Field label="Millesime">
+                <input type="number" value={millesime} onChange={e => setMillesime(e.target.value)} placeholder="ex: 2021" style={inputStyle} />
+              </Field>
               <Field label="Quantite (bouteilles)" required>
                 <input type="number" value={quantite} onChange={e => setQuantite(e.target.value)} required min="1" placeholder="ex: 12" style={inputStyle} />
               </Field>
@@ -475,16 +481,13 @@ const stats = references.reduce((acc, r) => {
 
           <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', border: `1.5px solid ${ISP.rule}` }}>
             <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: ISP.terracotta, fontWeight: 800 }}>Methode 2</div>
-            <h3 style={{ fontSize: 17, fontWeight: 800, margin: '4px 0 8px', letterSpacing: '-0.01em' }}>Importer un CSV</h3>
+            <h3 style={{ fontSize: 17, fontWeight: 800, margin: '4px 0 8px', letterSpacing: '-0.01em' }}>Importer un fichier</h3>
             <p style={{ fontSize: 12.5, color: ISP.muted, margin: '0 0 12px', lineHeight: 1.55 }}>
-              Colonnes attendues :<br />
-              <code style={{ display: 'inline-block', marginTop: 4, background: ISP.paperWarm, padding: '3px 7px', borderRadius: 5, fontSize: 11.5, color: ISP.burgundy, fontFamily: 'ui-monospace, monospace' }}>
-                nom_reference, appellation, couleur, millesime, quantite
-              </code>
+              Formats acceptes : CSV, Excel (.xlsx) — Sommit detecte automatiquement
             </p>
             <label style={{ display: 'block', padding: '14px 16px', borderRadius: 10, border: `2px dashed ${importing ? ISP.terracotta : ISP.rule}`, background: importing ? `${ISP.terracotta}10` : ISP.paperWarm, cursor: importing ? 'wait' : 'pointer', textAlign: 'center' as const, transition: 'all .2s' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: ISP.ink }}>{importing ? 'Import en cours...' : 'Cliquez pour choisir un fichier .csv ou .xlsx'}</div>
-             <input ref={fileRef} type="file" accept=".csv,.txt,.xlsx,.xls" onChange={importerCSV} disabled={importing} style={{ display: 'none' }} />
+              <input ref={fileRef} type="file" accept=".csv,.txt,.xlsx,.xls" onChange={importerCSV} disabled={importing} style={{ display: 'none' }} />
             </label>
             {importMsg && (
               <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: importOK ? ISP.sagePale : '#FBE9EB', color: importOK ? ISP.sage : ISP.burgundy, fontSize: 12.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -532,7 +535,7 @@ const stats = references.reduce((acc, r) => {
             <div style={{ padding: '40px 20px', borderRadius: 14, background: ISP.paperWarm, textAlign: 'center' as const }}>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14, opacity: 0.4 }}><BottleI color={ISP.muted} size={42} /></div>
               <div style={{ fontSize: 15, fontWeight: 800, color: ISP.ink, marginBottom: 6 }}>Votre cave est vide</div>
-              <div style={{ fontSize: 13, color: ISP.muted, lineHeight: 1.55, maxWidth: 320, margin: '0 auto' }}>Ajoutez votre premiere reference a gauche, ou importez votre stock depuis un fichier CSV.</div>
+              <div style={{ fontSize: 13, color: ISP.muted, lineHeight: 1.55, maxWidth: 320, margin: '0 auto' }}>Ajoutez votre premiere reference a gauche, ou importez votre stock.</div>
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ padding: '24px 20px', borderRadius: 12, background: ISP.paperWarm, textAlign: 'center' as const, color: ISP.muted, fontSize: 13.5 }}>Aucune reference ne correspond.</div>
