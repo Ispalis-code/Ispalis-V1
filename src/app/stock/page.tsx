@@ -261,7 +261,8 @@ export default function Stock() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       try {
-        const XLSX = await import('xlsx')        const buffer = await file.arrayBuffer()
+        const XLSX = await import('xlsx')        
+          const buffer = await file.arrayBuffer()
         const workbook = XLSX.read(buffer, { type: 'array' })
         const sheet = workbook.Sheets[workbook.SheetNames[0]]
         const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' })
