@@ -480,8 +480,8 @@ const importerCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
               </code>
             </p>
             <label style={{ display: 'block', padding: '14px 16px', borderRadius: 10, border: `2px dashed ${importing ? ISP.terracotta : ISP.rule}`, background: importing ? `${ISP.terracotta}10` : ISP.paperWarm, cursor: importing ? 'wait' : 'pointer', textAlign: 'center' as const, transition: 'all .2s' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: ISP.ink }}>{importing ? 'Import en cours...' : 'Cliquez pour choisir un fichier .csv'}</div>
-              <input ref={fileRef} type="file" accept=".csv,.txt" onChange={importerCSV} disabled={importing} style={{ display: 'none' }} />
+              <div style={{ fontSize: 13, fontWeight: 700, color: ISP.ink }}>{importing ? 'Import en cours...' : 'Cliquez pour choisir un fichier .csv ou .xlsx'}</div>
+             <input ref={fileRef} type="file" accept=".csv,.txt,.xlsx,.xls" onChange={importerCSV} disabled={importing} style={{ display: 'none' }} />
             </label>
             {importMsg && (
               <div style={{ marginTop: 10, padding: '8px 12px', borderRadius: 8, background: importOK ? ISP.sagePale : '#FBE9EB', color: importOK ? ISP.sage : ISP.burgundy, fontSize: 12.5, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
