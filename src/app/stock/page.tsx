@@ -266,6 +266,9 @@ export default function Stock() {
         const workbook = XLSX.read(buffer, { type: 'array' })
         const sheet = workbook.Sheets[workbook.SheetNames[0]]
         const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+        console.log('Premieres lignes:', JSON.stringify(rows.slice(0, 2)))
+        console.log('Headers detectes:', Object.keys(rows[0] || {}).join(' | '))
+        console.log('isSommit:', isSommit)
         if (rows.length === 0) { setImportMsg('Fichier vide'); setImporting(false); return }
         const headers = Object.keys(rows[0]).map(k => k.toLowerCase())
         const isSommit = headers.some(h => h.includes('domaine')) && headers.some(h => h.includes('stock'))
