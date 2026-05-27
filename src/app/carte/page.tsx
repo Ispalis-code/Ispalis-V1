@@ -385,7 +385,7 @@ export default function Carte() {
             </div>
             <h1 style={{ margin: '14px 0 0', fontSize: 46, fontWeight: 800, letterSpacing: '-0.025em', lineHeight: 1.02, maxWidth: '20ch' }}>
               Importez votre carte,{' '}
-              <span style={{ color: ISP.terracotta, fontStyle: 'italic' }}>accordez-la</span> d&apos;un geste.
+              <span style={{ color: ISP.terracotta, fontStyle: 'italic' }}>accordez-la </span> d&apos;un geste.
             </h1>
             <p style={{ marginTop: 12, fontSize: 15, color: ISP.muted, maxWidth: 600, lineHeight: 1.55 }}>
               Uploadez un PDF ou saisissez vos plats à la main — Ispalis génère les accords pour l&apos;ensemble du menu.
