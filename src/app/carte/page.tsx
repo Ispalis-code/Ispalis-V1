@@ -184,8 +184,8 @@ const toggleParam = (cat: 'types' | 'couleurs' | 'styles', val: string) => {
     setImportingPDF(false)
   }
 
-  const genererAccords = async () => {
-    const platsRemplis = plats.filter(p => p.trim() !== '')
+ const genererAccords = async (platsOverride?: string[]) => {
+  const platsRemplis = platsOverride || plats.filter(p => p.trim() !== '')
     if (platsRemplis.length === 0) return
     setLoading(true)
     setSavedMsg('')
@@ -275,8 +275,19 @@ const toggleParam = (cat: 'types' | 'couleurs' | 'styles', val: string) => {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 280, overflowY: 'auto', paddingRight: 4 }}>
             {plats.map((plat, i) => (
-              <DishRow key={i} index={i + 1} value={plat} onChange={(v) => updatePlat(i, v)} onDelete={() => supprimerPlat(i)} />
-            ))}
+  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{ flex: 1 }}>
+      <DishRow index={i + 1} value={plat} onChange={(v) => updatePlat(i, v)} onDelete={() => supprimerPlat(i)} />
+    </div>
+    <button
+      onClick={() => genererAccords([plat])}
+      disabled={loading || !plat.trim()}
+      title="Générer uniquement ce plat"
+      style={{ flexShrink: 0, padding: '6px 10px', borderRadius: 8, border: `1px solid ${ISP.terracotta}`, background: 'transparent', color: ISP.terracotta, fontFamily: 'inherit', fontSize: 11, fontWeight: 700, cursor: plat.trim() ? 'pointer' : 'not-allowed', opacity: plat.trim() ? 1 : 0.3, whiteSpace: 'nowrap' as const }}>
+      ✨
+    </button>
+  </div>
+))}
           </div>
         )}
         <button onClick={ajouterPlat} style={{ padding: '10px 14px', borderRadius: 10, border: `1.5px dashed ${ISP.terracotta}`, background: 'transparent', color: ISP.terracotta, fontFamily: 'inherit', fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
