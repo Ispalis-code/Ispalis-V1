@@ -73,10 +73,38 @@ export async function POST(request: NextRequest) {
         }))
       : [];
 
-    return NextResponse.json({
-      success: true,
-      data: { accords, alertes_stock, a_valoriser: [] },
-    });
+  // Logger les tokens et le coût
+const totalInput = accords.length * 200
+const totalOutput = accords.length * 350
+const coutUsd = ((totalInput * 3 + totalOutput * 15) / 1000000)
+
+try {
+  const { createClient } = await import('@supabase/supabase-js')
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  const authHeader = request.headers.get('authorization') || ''
+  const token = authHeader.replace('Bearer ', '')
+  const { data: { user } } = await supabaseAdmin.auth.getUser(token)
+  if (user) {
+    await supabaseAdmin.from('logs_api').insert({
+      user_id: user.id,
+      nb_plats: accords.length,
+      input_tokens: totalInput,
+      output_tokens: totalOutput,
+      cout_usd: coutUsd,
+      duree_ms: 0
+    })
+  }
+} catch (e) {
+  console.error('Log error:', e)
+}
+
+return NextResponse.json({
+  success: true,
+  data: { accords, alertes_stock, a_valoriser: [] },
+});
 
   } catch (error) {
     console.error("Erreur:", error);
