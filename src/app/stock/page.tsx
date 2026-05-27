@@ -287,38 +287,39 @@ export default function Stock() {
           let mill = null as number | null
           let qty = 1
           let type_boisson = 'vin'
-          if (isSommit) {
-            const domaine = get(['domaine'])
-            const appellation2 = get(['appellation'])
-            const cuvee = get(['cuvee', 'libelle'])
-            nomRef = [domaine, appellation2, cuvee].filter(Boolean).join(' - ')
-            app = appellation2
-            const couleurRaw = get(['couleur']).toLowerCase()
-            if (couleurRaw.includes('blanc')) coul = 'blanc'
-            else if (couleurRaw.includes('ros')) coul = 'rose'
-            else if (couleurRaw.includes('effervescent') || couleurRaw.includes('bulles') || couleurRaw.includes('champagne')) coul = 'effervescent'
-            else coul = 'rouge'
-            const millRaw = parseInt(get(['millesime', 'vintage', 'annee']))
-            mill = isNaN(millRaw) ? null : millRaw
-            const contenant = get(['contenant']).toLowerCase()
-            if (contenant && !contenant.includes('bouteille')) continue
-            const qtyRaw = parseFloat(get(['stock total', 'stock', 'quantite', 'qty']))
-            qty = isNaN(qtyRaw) || qtyRaw <= 0 ? 0 : Math.round(qtyRaw)
-            if (qty <= 0) continue
-          } else {
-            nomRef = get(['nom_reference', 'nom', 'name', 'vin', 'libelle', 'domaine'])
-            app = get(['appellation', 'aoc', 'region'])
-            const couleurRaw = get(['couleur', 'color', 'type']).toLowerCase()
-            if (couleurRaw.includes('blanc')) coul = 'blanc'
-            else if (couleurRaw.includes('ros')) coul = 'rose'
-            else if (couleurRaw.includes('bulles') || couleurRaw.includes('effervescent') || couleurRaw.includes('champagne')) coul = 'effervescent'
-            else coul = 'rouge'
-            const millRaw = parseInt(get(['millesime', 'vintage', 'annee']))
-            mill = isNaN(millRaw) ? null : millRaw
-            const qtyRaw = parseInt(get(['quantite', 'quantity', 'qty', 'stock']))
-            qty = isNaN(qtyRaw) ? 1 : qtyRaw
-            type_boisson = get(['type_boisson', 'type', 'categorie']) || 'vin'
-          }
+         if (isSommit) {
+  const domaine = get(['domaine'])
+  const appellation2 = get(['appellation'])
+  const cuvee = get(['cuvee', 'libelle'])
+  nomRef = [domaine, appellation2, cuvee].filter(Boolean).join(' - ')
+  app = appellation2
+  const couleurRaw = get(['couleur']).toLowerCase()
+  if (couleurRaw.includes('blanc')) coul = 'blanc'
+  else if (couleurRaw.includes('ros')) coul = 'rose'
+  else if (couleurRaw.includes('effervescent') || couleurRaw.includes('bulles') || couleurRaw.includes('champagne')) coul = 'effervescent'
+  else coul = 'rouge'
+  const millRaw = parseInt(get(['millesime', 'vintage', 'annee']))
+  mill = isNaN(millRaw) ? null : millRaw
+  const contenant = get(['contenant']).toLowerCase()
+  if (contenant && !contenant.includes('bouteille')) continue
+  const stockCave = get(['stock cave'])
+  const qtyRaw = parseFloat(stockCave !== '' ? stockCave : get(['stock total', 'stock', 'quantite', 'qty']))
+  qty = isNaN(qtyRaw) || qtyRaw <= 0 ? 0 : Math.round(qtyRaw)
+  if (qty <= 0) continue
+} else {
+  nomRef = get(['nom_reference', 'nom', 'name', 'vin', 'libelle', 'domaine'])
+  app = get(['appellation', 'aoc', 'region'])
+  const couleurRaw = get(['couleur', 'color', 'type']).toLowerCase()
+  if (couleurRaw.includes('blanc')) coul = 'blanc'
+  else if (couleurRaw.includes('ros')) coul = 'rose'
+  else if (couleurRaw.includes('bulles') || couleurRaw.includes('effervescent') || couleurRaw.includes('champagne')) coul = 'effervescent'
+  else coul = 'rouge'
+  const millRaw = parseInt(get(['millesime', 'vintage', 'annee']))
+  mill = isNaN(millRaw) ? null : millRaw
+  const qtyRaw = parseInt(get(['quantite', 'quantity', 'qty', 'stock']))
+  qty = isNaN(qtyRaw) ? 1 : qtyRaw
+  type_boisson = get(['type_boisson', 'type', 'categorie']) || 'vin'
+}
           if (!nomRef) { errors++; continue }
           const { error } = await supabase.from('stocks').insert({
             user_id: user.id, nom_reference: nomRef, appellation: app,
