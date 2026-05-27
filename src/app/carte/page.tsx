@@ -122,6 +122,20 @@ export default function Carte() {
   const [accords, setAccords] = useState<any[]>([])
   const [alertes, setAlertes] = useState<any[]>([])
   const [savedMsg, setSavedMsg] = useState('')
+  const [parametres, setParametres] = useState({
+  types: ['vin'],
+  couleurs: [] as string[],
+  styles: [] as string[],
+  budget: 'les trois niveaux',
+  cave_priorite: true,
+})
+
+const toggleParam = (cat: 'types' | 'couleurs' | 'styles', val: string) => {
+  setParametres(prev => {
+    const arr = prev[cat] as string[]
+    return { ...prev, [cat]: arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val] }
+  })
+}
   const supabase = createClient()
   const router = useRouter()
 
@@ -186,7 +200,7 @@ export default function Carte() {
       const res = await fetch('/api/recommandations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plats: platsRemplis.slice(0, 8), stock: stockFormatted, ton: 'professionnel' })
+        body: JSON.stringify({ plats: platsRemplis.slice(0, 8), stock: stockFormatted, ton: 'professionnel' , parametres })
       })
       const data = await res.json()
       if (data.success) {
@@ -269,7 +283,81 @@ export default function Carte() {
           <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>Ajouter un plat
         </button>
       </section>
+<div style={{ background: ISP.paperWarm, borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+  <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: ISP.terracotta, fontWeight: 800 }}>Paramètres de génération</div>
 
+  <div>
+    <div style={{ fontSize: 11, fontWeight: 700, color: ISP.muted, marginBottom: 6 }}>TYPE DE BOISSON</div>
+    <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+      {[
+        { val: 'vin', label: 'Vins' },
+        { val: 'sans_alcool', label: 'Sans alcool' },
+        { val: 'biere', label: 'Bières' },
+        { val: 'spiritueux', label: 'Spiritueux' },
+      ].map(({ val, label }) => (
+        <button key={val} onClick={() => toggleParam('types', val)}
+          style={{ padding: '5px 12px', borderRadius: 999, border: `1px solid ${parametres.types.includes(val) ? ISP.burgundy : ISP.rule}`, background: parametres.types.includes(val) ? '#F5E6E8' : ISP.card, color: parametres.types.includes(val) ? ISP.burgundy : ISP.muted, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+          {label}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <div>
+    <div style={{ fontSize: 11, fontWeight: 700, color: ISP.muted, marginBottom: 6 }}>COULEUR</div>
+    <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+      {[
+        { val: 'rouge', label: 'Rouge' },
+        { val: 'blanc', label: 'Blanc' },
+        { val: 'rosé', label: 'Rosé' },
+        { val: 'bulles', label: 'Bulles' },
+      ].map(({ val, label }) => (
+        <button key={val} onClick={() => toggleParam('couleurs', val)}
+          style={{ padding: '5px 12px', borderRadius: 999, border: `1px solid ${parametres.couleurs.includes(val) ? ISP.burgundy : ISP.rule}`, background: parametres.couleurs.includes(val) ? '#F5E6E8' : ISP.card, color: parametres.couleurs.includes(val) ? ISP.burgundy : ISP.muted, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+          {label}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <div>
+    <div style={{ fontSize: 11, fontWeight: 700, color: ISP.muted, marginBottom: 6 }}>STYLE</div>
+    <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+      {[
+        { val: 'léger et frais', label: 'Léger & frais' },
+        { val: 'charnu et puissant', label: 'Charnu & puissant' },
+        { val: 'accords régionaux', label: 'Régional' },
+        { val: 'vins naturels', label: 'Naturel' },
+        { val: 'classique', label: 'Classique' },
+      ].map(({ val, label }) => (
+        <button key={val} onClick={() => toggleParam('styles', val)}
+          style={{ padding: '5px 12px', borderRadius: 999, border: `1px solid ${parametres.styles.includes(val) ? ISP.ochre : ISP.rule}`, background: parametres.styles.includes(val) ? '#FDF8E7' : ISP.card, color: parametres.styles.includes(val) ? '#854F0B' : ISP.muted, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+          {label}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <div>
+    <div style={{ fontSize: 11, fontWeight: 700, color: ISP.muted, marginBottom: 6 }}>BUDGET BOUTEILLE</div>
+    <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+      {['- de 20€', '20-50€', '50-100€', '+ de 100€', 'Les trois niveaux'].map(b => (
+        <button key={b} onClick={() => setParametres(prev => ({ ...prev, budget: b }))}
+          style={{ padding: '5px 12px', borderRadius: 999, border: `1px solid ${parametres.budget === b ? ISP.sage : ISP.rule}`, background: parametres.budget === b ? ISP.sagePale : ISP.card, color: parametres.budget === b ? ISP.sage : ISP.muted, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+          {b}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <button onClick={() => setParametres(prev => ({ ...prev, cave_priorite: !prev.cave_priorite }))}
+      style={{ width: 36, height: 20, borderRadius: 999, background: parametres.cave_priorite ? ISP.burgundy : ISP.rule, border: 'none', cursor: 'pointer', position: 'relative' as const, flexShrink: 0, transition: 'background .2s' }}>
+      <span style={{ position: 'absolute' as const, top: 2, left: parametres.cave_priorite ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: 'white', transition: 'left .2s' }} />
+    </button>
+    <span style={{ fontSize: 12, color: ISP.muted, fontWeight: 700 }}>Priorité aux références de ma cave</span>
+  </div>
+</div>
       {/* Bouton générer */}
       {plats.length > 0 && (
         <div>
