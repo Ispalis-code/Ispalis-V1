@@ -238,62 +238,135 @@ export default function Stock() {
     setLoading(false)
   }
 
-  const importerCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+const importerCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+
+  if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
     setImporting(true)
     setImportMsg('')
     setImportOK(false)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const text = await file.text()
-    const lines = text.split('\n').filter(l => l.trim())
-    const headers = lines[0].toLowerCase().split(',').map(h => h.trim())
-    let imported = 0
-    let errors = 0
-    for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''))
-      if (values.length < 2) continue
-      const row: any = {}
-      headers.forEach((h, idx) => { row[h] = values[idx] || '' })
-      const nomRef = row['nom_reference'] || row['nom'] || row['name'] || values[0]
-      const qty = parseInt(row['quantite'] || row['quantity'] || row['qty'] || values[4] || '1')
-      if (!nomRef) { errors++; continue }
-      const { error } = await supabase.from('stocks').insert({
-        user_id: user.id, nom_reference: nomRef,
-        appellation: row['appellation'] || values[1] || '',
-        couleur: row['couleur'] || row['color'] || values[2] || 'rouge',
-        type_boisson: row['type_boisson'] || row['type'] || 'vin',
-        millesime: parseInt(row['millesime'] || row['vintage'] || values[3]) || null,
-        quantite: isNaN(qty) ? 1 : qty,
-        derniere_vente: new Date().toISOString().split('T')[0]
-      })
-      if (error) { errors++ } else { imported++ }
+    try {
+      const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.mjs' as any)
+      const buffer = await file.arrayBuffer()
+      const workbook = XLSX.read(buffer, { type: 'array' })
+      const sheet = workbook.Sheets[workbook.SheetNames[0]]
+      const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+      if (rows.length === 0) { setImportMsg('Fichier vide'); setImporting(false); return }
+      const headers = Object.keys(rows[0]).map(k => k.toLowerCase())
+      const isSommit = headers.some(h => h.includes('domaine')) && headers.some(h => h.includes('stock'))
+      let imported = 0
+      let errors = 0
+      for (const row of rows) {
+        const get = (names: string[]) => {
+          for (const n of names) {
+            const key = Object.keys(row).find(k => k.toLowerCase().includes(n))
+            if (key && row[key] !== '') return String(row[key]).trim()
+          }
+          return ''
+        }
+        let nomRef = ''
+        let appellation = ''
+        let couleur = 'rouge'
+        let millesime = null as number | null
+        let quantite = 1
+        let type_boisson = 'vin'
+        if (isSommit) {
+          const domaine = get(['domaine'])
+          const app = get(['appellation'])
+          const cuvee = get(['cuvée', 'cuvee', 'libellé', 'libelle'])
+          nomRef = [domaine, app, cuvee].filter(Boolean).join(' - ')
+          appellation = app
+          const couleurRaw = get(['couleur']).toLowerCase()
+          if (couleurRaw.includes('blanc')) couleur = 'blanc'
+          else if (couleurRaw.includes('ros')) couleur = 'rose'
+          else if (couleurRaw.includes('effervescent') || couleurRaw.includes('bulles') || couleurRaw.includes('champagne') || couleurRaw.includes('crémant')) couleur = 'effervescent'
+          else couleur = 'rouge'
+          const mill = parseInt(get(['millésime', 'millesime', 'vintage', 'année', 'annee']))
+          millesime = isNaN(mill) ? null : mill
+          const contenant = get(['contenant']).toLowerCase()
+          if (contenant && !contenant.includes('bouteille')) continue
+          const qty = parseFloat(get(['stock total', 'stock', 'quantite', 'quantité', 'qty']))
+          quantite = isNaN(qty) || qty <= 0 ? 0 : Math.round(qty)
+          if (quantite <= 0) continue
+        } else {
+          nomRef = get(['nom_reference', 'nom', 'name', 'vin', 'libelle', 'libellé', 'domaine'])
+          appellation = get(['appellation', 'aoc', 'region', 'région'])
+          const couleurRaw = get(['couleur', 'color', 'type']).toLowerCase()
+          if (couleurRaw.includes('blanc')) couleur = 'blanc'
+          else if (couleurRaw.includes('ros')) couleur = 'rose'
+          else if (couleurRaw.includes('bulles') || couleurRaw.includes('effervescent') || couleurRaw.includes('champagne')) couleur = 'effervescent'
+          else couleur = 'rouge'
+          const mill = parseInt(get(['millesime', 'millésime', 'vintage', 'annee', 'année']))
+          millesime = isNaN(mill) ? null : mill
+          const qty = parseInt(get(['quantite', 'quantité', 'quantity', 'qty', 'stock']))
+          quantite = isNaN(qty) ? 1 : qty
+          type_boisson = get(['type_boisson', 'type', 'categorie', 'catégorie']) || 'vin'
+        }
+        if (!nomRef) { errors++; continue }
+        const { error } = await supabase.from('stocks').insert({
+          user_id: user.id,
+          nom_reference: nomRef,
+          appellation,
+          couleur,
+          millesime,
+          quantite,
+          type_boisson,
+          derniere_vente: new Date().toISOString().split('T')[0]
+        })
+        if (error) { errors++ } else { imported++ }
+      }
+      setImportMsg(`${imported} références importées${errors > 0 ? ` (${errors} ignorées)` : ''}`)
+      setImportOK(imported > 0)
+      await chargerStock()
+    } catch (err) {
+      console.error(err)
+      setImportMsg('Erreur lors de la lecture du fichier Excel')
+      setImportOK(false)
     }
-    setImportMsg(`${imported} references importees${errors > 0 ? ` (${errors} erreurs ignorees)` : ''}`)
-    setImportOK(imported > 0)
-    await chargerStock()
     setImporting(false)
     if (fileRef.current) fileRef.current.value = ''
+    return
   }
 
-  const supprimerReference = async (id: string) => {
-    await supabase.from('stocks').delete().eq('id', id)
-    await chargerStock()
+  // Suite du code CSV existant...
+  setImporting(true)
+  setImportMsg('')
+  setImportOK(false)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const text = await file.text()
+  const lines = text.split('\n').filter(l => l.trim())
+  const headers = lines[0].toLowerCase().split(',').map(h => h.trim())
+  let imported = 0
+  let errors = 0
+  for (let i = 1; i < lines.length; i++) {
+    const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''))
+    if (values.length < 2) continue
+    const row: any = {}
+    headers.forEach((h, idx) => { row[h] = values[idx] || '' })
+    const nomRef = row['nom_reference'] || row['nom'] || row['name'] || values[0]
+    const qty = parseInt(row['quantite'] || row['quantity'] || row['qty'] || values[4] || '1')
+    if (!nomRef) { errors++; continue }
+    const { error } = await supabase.from('stocks').insert({
+      user_id: user.id,
+      nom_reference: nomRef,
+      appellation: row['appellation'] || values[1] || '',
+      couleur: row['couleur'] || row['color'] || values[2] || 'rouge',
+      millesime: parseInt(row['millesime'] || row['vintage'] || values[3]) || null,
+      quantite: isNaN(qty) ? 1 : qty,
+      derniere_vente: new Date().toISOString().split('T')[0]
+    })
+    if (error) { errors++ } else { imported++ }
   }
-
-  const viderStock = async () => {
-    if (!confirm('Supprimer toutes les references de votre cave ?')) return
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    await supabase.from('stocks').delete().eq('user_id', user.id)
-    await chargerStock()
-  }
-
-  const stats = references.reduce((acc, r) => {
-    acc[r.couleur] = (acc[r.couleur] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
+  setImportMsg(`${imported} references importees${errors > 0 ? ` (${errors} erreurs ignorees)` : ''}`)
+  setImportOK(imported > 0)
+  await chargerStock()
+  setImporting(false)
+  if (fileRef.current) fileRef.current.value = ''
+}
 
   const totalBottles = references.reduce((sum, r) => sum + (r.quantite || 0), 0)
 
