@@ -58,9 +58,10 @@ export default function Service() {
   const [dateMenu, setDateMenu] = useState('')
   const [accordOuvert, setAccordOuvert] = useState<number | null>(null)
   const [modeVentes, setModeVentes] = useState(false)
-const [ventesSelectionnees, setVentesSelectionnees] = useState<Record<string, number>>({})
-const [stock, setStock] = useState<any[]>([])
-const [venteMsg, setVenteMsg] = useState('')
+  const [ventesSelectionnees, setVentesSelectionnees] = useState<Record<string, number>>({})
+  const [stock, setStock] = useState<any[]>([])
+  const [venteMsg, setVenteMsg] = useState('')
+  const [rechercheVente, setRechercheVente] = useState('')
   const [recherche, setRecherche] = useState('')
   const supabase = createClient()
   const router = useRouter()
@@ -141,12 +142,22 @@ if (stockData) setStock(stockData)
     <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: ISP.terracotta, marginBottom: 12 }}>
       Selectionner les bouteilles vendues ce soir
     </div>
+    <div style={{ position: 'relative', marginBottom: 12 }}>
+  <input
+    type="text"
+    placeholder="Rechercher une reference..."
+    value={rechercheVente}
+    onChange={e => setRechercheVente(e.target.value)}
+    style={{ width: '100%', padding: '10px 16px 10px 36px', borderRadius: 10, border: `1px solid ${ISP.rule}`, background: ISP.card, fontFamily: 'inherit', fontSize: 14, color: ISP.ink, outline: 'none', boxSizing: 'border-box' as const }}
+  />
+  <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: ISP.muted }}>🔍</span>
+</div>
     {stock.length === 0 ? (
       <div style={{ color: ISP.muted, fontSize: 13, textAlign: 'center' as const, padding: '20px 0' }}>Cave vide</div>
     ) : (
       <>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, maxHeight: 400, overflowY: 'auto' as const }}>
-          {stock.map((ref: any) => {
+          {stock.filter((ref: any) => rechercheVente.trim() === '' || (ref.nom_reference || '').toLowerCase().includes(rechercheVente.toLowerCase()) || (ref.appellation || '').toLowerCase().includes(rechercheVente.toLowerCase())).map((ref: any) => {
             const qty = ventesSelectionnees[ref.id] || 0
             return (
               <div key={ref.id} style={{ background: qty > 0 ? '#F5E6E8' : ISP.card, borderRadius: 12, padding: '10px 14px', border: `1px solid ${qty > 0 ? ISP.burgundy : ISP.rule}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
