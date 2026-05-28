@@ -103,16 +103,7 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
-  return (
-    <label style={{ display: 'block' }}>
-      <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: ISP.muted, marginBottom: 6 }}>
-        {label}{required && <span style={{ color: ISP.terracotta }}> *</span>}
-      </div>
-      {children}
-    </label>
-  )
-}
+
 
 function NavBtn({ label, badge, active, muted, onClick }: { label: string; badge?: number; active?: boolean; muted?: boolean; onClick?: () => void }) {
   return (
@@ -180,7 +171,16 @@ function RefRow({ refData, onDelete }: { refData: any; onDelete: () => void }) {
     </div>
   )
 }
-
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <label style={{ display: 'block' }}>
+      <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: ISP.muted, marginBottom: 6 }}>
+        {label}{required && <span style={{ color: ISP.terracotta }}> *</span>}
+      </div>
+      {children}
+    </label>
+  )
+}
 export default function Stock() {
   const [references, setReferences] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
