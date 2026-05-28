@@ -57,6 +57,10 @@ export default function Service() {
   const [loading, setLoading] = useState(true)
   const [dateMenu, setDateMenu] = useState('')
   const [accordOuvert, setAccordOuvert] = useState<number | null>(null)
+  const [modeVentes, setModeVentes] = useState(false)
+const [ventesSelectionnees, setVentesSelectionnees] = useState<Record<string, number>>({})
+const [stock, setStock] = useState<any[]>([])
+const [venteMsg, setVenteMsg] = useState('')
   const [recherche, setRecherche] = useState('')
   const supabase = createClient()
   const router = useRouter()
@@ -80,7 +84,29 @@ export default function Service() {
       setDateMenu(recoData.menus?.date_menu || '')
     }
     setLoading(false)
+    const { data: stockData } = await supabase.from('stocks').select('*').eq('user_id', user.id).order('nom_reference')
+if (stockData) setStock(stockData)
   }
+  const validerVentes = async () => {
+  const entries = Object.entries(ventesSelectionnees).filter(([_, qty]) => qty > 0)
+  if (entries.length === 0) return
+  for (const [id, qty] of entries) {
+    const ref = stock.find(s => s.id === id)
+    if (!ref) continue
+    const newQty = Math.max(0, (ref.quantite || 0) - qty)
+    await supabase.from('stocks').update({
+      quantite: newQty,
+      derniere_vente: new Date().toISOString().split('T')[0]
+    }).eq('id', id)
+  }
+  setVenteMsg(`${entries.length} reference${entries.length > 1 ? 's' : ''} mise${entries.length > 1 ? 's' : ''} a jour`)
+  setVentesSelectionnees({})
+  setModeVentes(false)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data: stockData } = await supabase.from('stocks').select('*').eq('user_id', user.id).order('nom_reference')
+  if (stockData) setStock(stockData)
+}
 
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -96,13 +122,62 @@ export default function Service() {
         <button onClick={() => router.push('/carte')} style={{ background: ISP.ochre, color: ISP.burgundy, border: 'none', borderRadius: 10, padding: '8px 14px', fontFamily: 'inherit', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>
           + Générer
         </button>
+        <button onClick={() => setModeVentes(!modeVentes)} style={{ background: modeVentes ? ISP.ochre : 'rgba(255,255,255,0.15)', color: modeVentes ? ISP.burgundy : 'white', border: 'none', borderRadius: 10, padding: '8px 14px', fontFamily: 'inherit', fontWeight: 800, fontSize: 12, cursor: 'pointer' }}>
+  {modeVentes ? '✕ Annuler' : '🍾 Ventes'}
+</button>
       </div>
-
+{venteMsg && (
+  <div style={{ background: ISP.sagePale, color: ISP.sage, padding: '10px 16px', fontSize: 13, fontWeight: 700, textAlign: 'center' as const }}>
+    ✓ {venteMsg}
+  </div>
+)}
       <div style={{ padding: '16px 16px 80px' }}>
 
         {/* Date */}
         <div style={{ fontSize: 12, color: ISP.muted, textTransform: 'capitalize', marginBottom: 16, fontWeight: 600 }}>
           {today}
+          {modeVentes && (
+  <div style={{ marginTop: 16 }}>
+    <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: ISP.terracotta, marginBottom: 12 }}>
+      Selectionner les bouteilles vendues ce soir
+    </div>
+    {stock.length === 0 ? (
+      <div style={{ color: ISP.muted, fontSize: 13, textAlign: 'center' as const, padding: '20px 0' }}>Cave vide</div>
+    ) : (
+      <>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, maxHeight: 400, overflowY: 'auto' as const }}>
+          {stock.map((ref: any) => {
+            const qty = ventesSelectionnees[ref.id] || 0
+            return (
+              <div key={ref.id} style={{ background: qty > 0 ? '#F5E6E8' : ISP.card, borderRadius: 12, padding: '10px 14px', border: `1px solid ${qty > 0 ? ISP.burgundy : ISP.rule}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: ISP.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{ref.nom_reference}</div>
+                  <div style={{ fontSize: 11, color: ISP.muted, marginTop: 2 }}>{ref.appellation} · {ref.quantite} en stock</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <button onClick={() => setVentesSelectionnees(prev => ({ ...prev, [ref.id]: Math.max(0, (prev[ref.id] || 0) - 1) }))}
+                    style={{ width: 28, height: 28, borderRadius: 8, border: `1px solid ${ISP.rule}`, background: ISP.paperWarm, color: ISP.ink, fontWeight: 800, fontSize: 16, cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
+                    −
+                  </button>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: qty > 0 ? ISP.burgundy : ISP.muted, minWidth: 20, textAlign: 'center' as const }}>{qty}</span>
+                  <button onClick={() => setVentesSelectionnees(prev => ({ ...prev, [ref.id]: Math.min(ref.quantite, (prev[ref.id] || 0) + 1) }))}
+                    style={{ width: 28, height: 28, borderRadius: 8, border: `1px solid ${ISP.rule}`, background: ISP.paperWarm, color: ISP.ink, fontWeight: 800, fontSize: 16, cursor: 'pointer', display: 'grid', placeItems: 'center' }}>
+                    +
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        {Object.values(ventesSelectionnees).some(v => v > 0) && (
+          <button onClick={validerVentes} style={{ width: '100%', marginTop: 14, padding: '14px', background: ISP.burgundy, color: 'white', border: 'none', borderRadius: 12, fontFamily: 'inherit', fontWeight: 800, fontSize: 14, cursor: 'pointer' }}>
+            Valider — {Object.values(ventesSelectionnees).reduce((s, v) => s + v, 0)} bouteille{Object.values(ventesSelectionnees).reduce((s, v) => s + v, 0) > 1 ? 's' : ''} vendue{Object.values(ventesSelectionnees).reduce((s, v) => s + v, 0) > 1 ? 's' : ''}
+          </button>
+        )}
+      </>
+    )}
+  </div>
+)}
         </div>
 <div style={{ position: 'relative', marginBottom: 16 }}>
   <input
