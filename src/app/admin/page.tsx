@@ -19,6 +19,59 @@ const ISP = {
 
 const ADMIN_PASSWORD = 'ispalis2026'
 
+function InfoBubble({ text }: { text: string }) {
+  const [visible, setVisible] = useState(false)
+  return (
+    <div style={{ position: 'relative', display: 'inline-flex' }}>
+      <button
+        type="button"
+        onClick={() => setVisible(v => !v)}
+        style={{
+          width: 16, height: 16, borderRadius: '50%',
+          background: visible ? ISP.burgundy : ISP.rule,
+          color: visible ? '#fff' : ISP.muted,
+          border: 'none', cursor: 'pointer',
+          fontFamily: 'inherit', fontSize: 10, fontWeight: 800,
+          display: 'grid', placeItems: 'center',
+          transition: 'all .15s', flexShrink: 0,
+          lineHeight: 1,
+        }}
+        title="En savoir plus"
+      >
+        i
+      </button>
+      {visible && (
+        <>
+          <div
+            onClick={() => setVisible(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+          />
+          <div style={{
+            position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%',
+            transform: 'translateX(-50%)',
+            background: ISP.burgundy, color: ISP.paper,
+            fontSize: 12, fontWeight: 500, lineHeight: 1.5,
+            padding: '10px 14px', borderRadius: 10,
+            width: 220, zIndex: 50,
+            boxShadow: '0 8px 24px -8px rgba(94,17,25,.4)',
+            pointerEvents: 'none',
+          }}>
+            {text}
+            <div style={{
+              position: 'absolute', top: '100%', left: '50%',
+              transform: 'translateX(-50%)',
+              width: 0, height: 0,
+              borderLeft: '6px solid transparent',
+              borderRight: '6px solid transparent',
+              borderTop: `6px solid ${ISP.burgundy}`,
+            }} />
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function Admin() {
   const [auth, setAuth] = useState(false)
   const [pwd, setPwd] = useState('')
@@ -112,13 +165,28 @@ export default function Admin() {
         {/* Stats globales */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 16, marginBottom: 32 }}>
           {[
-            { label: 'Restaurants inscrits', value: users.length, suffix: '', color: ISP.burgundy },
-            { label: `Appels API (${periode}j)`, value: totalAppels, suffix: '', color: ISP.terracotta },
-            { label: `Coût total (${periode}j)`, value: totalCout.toFixed(4), suffix: '$', color: ISP.sage },
-            { label: 'Coût moyen / appel', value: coutMoyen.toFixed(4), suffix: '$', color: ISP.muted },
-          ].map(({ label, value, suffix, color }) => (
+            {
+              label: 'Restaurants inscrits', value: users.length, suffix: '', color: ISP.burgundy,
+              info: 'Nombre total de comptes créés sur Ispalis, toutes périodes confondues.',
+            },
+            {
+              label: `Appels API (${periode}j)`, value: totalAppels, suffix: '', color: ISP.terracotta,
+              info: `Nombre de fois où Claude a été appelé pour générer des accords sur les ${periode} derniers jours.`,
+            },
+            {
+              label: `Coût total (${periode}j)`, value: totalCout.toFixed(4), suffix: '$', color: ISP.sage,
+              info: `Somme des coûts Anthropic en dollars sur les ${periode} derniers jours. Basé sur les tokens consommés.`,
+            },
+            {
+              label: 'Coût moyen / appel', value: coutMoyen.toFixed(4), suffix: '$', color: ISP.muted,
+              info: "Coût moyen par génération d'accords. Utile pour estimer la rentabilité par restaurant.",
+            },
+          ].map(({ label, value, suffix, color, info }) => (
             <div key={label} style={{ background: ISP.card, borderRadius: 14, padding: '18px 20px', borderTop: `4px solid ${color}`, boxShadow: '0 1px 0 rgba(60,40,20,.04)' }}>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: ISP.muted, marginBottom: 8 }}>{label}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: ISP.muted }}>{label}</div>
+                <InfoBubble text={info} />
+              </div>
               <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-0.03em', color: ISP.ink, lineHeight: 1 }}>{value}<span style={{ fontSize: 16, opacity: 0.6 }}>{suffix}</span></div>
             </div>
           ))}
@@ -129,7 +197,10 @@ export default function Admin() {
           {/* Par restaurant */}
           <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px' }}>
             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: ISP.terracotta, marginBottom: 4 }}>Par restaurant</div>
-            <h2 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.01em' }}>Utilisation</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 16px' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: '-0.01em' }}>Utilisation</h2>
+              <InfoBubble text="Cumul des appels API, plats générés et coût par restaurant sur la période sélectionnée." />
+            </div>
             {Object.keys(parUser).length === 0 ? (
               <div style={{ color: ISP.muted, fontSize: 13 }}>Aucune donnée sur cette période</div>
             ) : (
@@ -155,7 +226,10 @@ export default function Admin() {
           {/* Derniers appels */}
           <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px' }}>
             <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: ISP.terracotta, marginBottom: 4 }}>Historique</div>
-            <h2 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.01em' }}>Derniers appels</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 16px' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: '-0.01em' }}>Derniers appels</h2>
+              <InfoBubble text="Les 20 derniers appels Claude triés du plus récent au plus ancien. Chaque ligne = une génération d'accords." />
+            </div>
             {logs.length === 0 ? (
               <div style={{ color: ISP.muted, fontSize: 13 }}>Aucun appel sur cette période</div>
             ) : (
@@ -184,7 +258,10 @@ export default function Admin() {
         {/* Liste restaurants */}
         <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', marginTop: 24 }}>
           <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: ISP.terracotta, marginBottom: 4 }}>Inscrits</div>
-          <h2 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.01em' }}>Restaurants ({users.length})</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 16px' }}>
+            <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0, letterSpacing: '-0.01em' }}>Restaurants ({users.length})</h2>
+            <InfoBubble text="Liste de tous les établissements inscrits sur Ispalis, triés par date d'inscription (le plus récent en premier)." />
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: 10 }}>
             {users.map((user: any) => (
               <div key={user.id} style={{ padding: '10px 14px', background: ISP.paperWarm, borderRadius: 10, fontSize: 13 }}>
