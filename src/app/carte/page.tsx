@@ -112,6 +112,37 @@ function AlertesStock({ alertes }: { alertes: any[] }) {
     </div>
   )
 }
+
+function FiltreGroupe({ label, options, selected, onToggle, accentColor, bgColor }: {
+  label: string
+  options: { val: string; label: string }[]
+  selected: string[]
+  onToggle: (v: string) => void
+  accentColor: string
+  bgColor: string
+}) {
+  return (
+    <div>
+      <div style={{ fontSize: 10.5, fontWeight: 700, color: ISP.muted, marginBottom: 5, letterSpacing: '0.06em' }}>{label}</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 5 }}>
+        {options.map(({ val, label }) => (
+          <button key={val} onClick={() => onToggle(val)}
+            style={{
+              padding: '4px 11px', borderRadius: 999,
+              border: `1px solid ${selected.includes(val) ? accentColor : ISP.rule}`,
+              background: selected.includes(val) ? bgColor : ISP.card,
+              color: selected.includes(val) ? accentColor : ISP.muted,
+              fontFamily: 'inherit', fontSize: 11.5, fontWeight: 700,
+              cursor: 'pointer', transition: 'all .12s',
+            }}>
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Carte() {
   const [plats, setPlats] = useState<string[]>([])
   const [stock, setStock] = useState<any[]>([])
@@ -122,20 +153,41 @@ export default function Carte() {
   const [accords, setAccords] = useState<any[]>([])
   const [alertes, setAlertes] = useState<any[]>([])
   const [savedMsg, setSavedMsg] = useState('')
-  const [parametres, setParametres] = useState({
-  types: ['vin'],
-  couleurs: [] as string[],
-  styles: [] as string[],
+ const [parametres, setParametres] = useState({
+  types: ['vin'] as string[],
+  filtres: {} as Record<string, string[]>,
   budget: 'les trois niveaux',
   cave_priorite: true,
 })
+const [ongletActif, setOngletActif] = useState('vin')
 
-const toggleParam = (cat: 'types' | 'couleurs' | 'styles', val: string) => {
+const toggleType = (val: string) => {
   setParametres(prev => {
-    const arr = prev[cat] as string[]
-    return { ...prev, [cat]: arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val] }
+    const next = prev.types.includes(val)
+      ? prev.types.filter(x => x !== val)
+      : [...prev.types, val]
+    return { ...prev, types: next }
+  })
+  if (!parametres.types.includes(val)) {
+    setOngletActif(val)
+  } else if (ongletActif === val) {
+    const remaining = parametres.types.filter(x => x !== val)
+    if (remaining.length > 0) setOngletActif(remaining[0])
+  }
+}
+
+const toggleFiltre = (type: string, cat: string, val: string) => {
+  setParametres(prev => {
+    const key = `${type}_${cat}`
+    const current = prev.filtres[key] || []
+    const updated = current.includes(val) ? current.filter(x => x !== val) : [...current, val]
+    return { ...prev, filtres: { ...prev.filtres, [key]: updated } }
   })
 }
+
+const getFiltre = (type: string, cat: string) =>
+  parametres.filtres[`${type}_${cat}`] || []
+  
   const supabase = createClient()
   const router = useRouter()
 
@@ -294,73 +346,252 @@ const toggleParam = (cat: 'types' | 'couleurs' | 'styles', val: string) => {
           <span style={{ fontSize: 16, lineHeight: 1 }}>+</span>Ajouter un plat
         </button>
       </section>
-<div style={{ background: ISP.paperWarm, borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-  <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: ISP.terracotta, fontWeight: 800 }}>Paramètres de génération</div>
+<div style={{ background: ISP.paperWarm, borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+  <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: ISP.terracotta, fontWeight: 800 }}>
+    Paramètres de génération
+  </div>
 
+  {/* Sélecteur de types */}
   <div>
     <div style={{ fontSize: 11, fontWeight: 700, color: ISP.muted, marginBottom: 6 }}>TYPE DE BOISSON</div>
     <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
       {[
-        { val: 'vin', label: 'Vins' },
-        { val: 'sans_alcool', label: 'Sans alcool' },
-        { val: 'biere', label: 'Bières' },
-        { val: 'spiritueux', label: 'Spiritueux' },
+        { val: 'vin', label: '🍷 Vins' },
+        { val: 'biere', label: '🍺 Bières' },
+        { val: 'petillant', label: '🥂 Pétillants' },
+        { val: 'spiritueux', label: '🥃 Spiritueux' },
+        { val: 'sans_alcool', label: '🫧 Sans alcool' },
       ].map(({ val, label }) => (
-        <button key={val} onClick={() => toggleParam('types', val)}
-          style={{ padding: '5px 12px', borderRadius: 999, border: `1px solid ${parametres.types.includes(val) ? ISP.burgundy : ISP.rule}`, background: parametres.types.includes(val) ? '#F5E6E8' : ISP.card, color: parametres.types.includes(val) ? ISP.burgundy : ISP.muted, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+        <button key={val} onClick={() => toggleType(val)}
+          style={{
+            padding: '6px 13px', borderRadius: 999,
+            border: `1.5px solid ${parametres.types.includes(val) ? ISP.burgundy : ISP.rule}`,
+            background: parametres.types.includes(val) ? '#F5E6E8' : ISP.card,
+            color: parametres.types.includes(val) ? ISP.burgundy : ISP.muted,
+            fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+            transition: 'all .15s',
+          }}>
           {label}
         </button>
       ))}
     </div>
   </div>
 
-  <div>
-    <div style={{ fontSize: 11, fontWeight: 700, color: ISP.muted, marginBottom: 6 }}>COULEUR</div>
-    <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-      {[
-        { val: 'rouge', label: 'Rouge' },
-        { val: 'blanc', label: 'Blanc' },
-        { val: 'rosé', label: 'Rosé' },
-        { val: 'bulles', label: 'Bulles' },
-      ].map(({ val, label }) => (
-        <button key={val} onClick={() => toggleParam('couleurs', val)}
-          style={{ padding: '5px 12px', borderRadius: 999, border: `1px solid ${parametres.couleurs.includes(val) ? ISP.burgundy : ISP.rule}`, background: parametres.couleurs.includes(val) ? '#F5E6E8' : ISP.card, color: parametres.couleurs.includes(val) ? ISP.burgundy : ISP.muted, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-          {label}
-        </button>
-      ))}
-    </div>
-  </div>
+  {/* Onglets par type sélectionné */}
+  {parametres.types.length > 0 && (
+    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
 
-  <div>
-    <div style={{ fontSize: 11, fontWeight: 700, color: ISP.muted, marginBottom: 6 }}>STYLE</div>
-    <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-      {[
-        { val: 'léger et frais', label: 'Léger & frais' },
-        { val: 'charnu et puissant', label: 'Charnu & puissant' },
-        { val: 'accords régionaux', label: 'Régional' },
-        { val: 'vins naturels', label: 'Naturel' },
-        { val: 'classique', label: 'Classique' },
-      ].map(({ val, label }) => (
-        <button key={val} onClick={() => toggleParam('styles', val)}
-          style={{ padding: '5px 12px', borderRadius: 999, border: `1px solid ${parametres.styles.includes(val) ? ISP.ochre : ISP.rule}`, background: parametres.styles.includes(val) ? '#FDF8E7' : ISP.card, color: parametres.styles.includes(val) ? '#854F0B' : ISP.muted, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-          {label}
-        </button>
-      ))}
-    </div>
-  </div>
+      {/* Barre d'onglets */}
+      {parametres.types.length > 1 && (
+        <div style={{ display: 'flex', gap: 4, borderBottom: `1.5px solid ${ISP.rule}`, paddingBottom: 0 }}>
+          {parametres.types.map(type => {
+            const labels: Record<string, string> = {
+              vin: '🍷 Vins', biere: '🍺 Bières', petillant: '🥂 Pétillants',
+              spiritueux: '🥃 Spiritueux', sans_alcool: '🫧 Sans alcool',
+            }
+            return (
+              <button key={type} onClick={() => setOngletActif(type)}
+                style={{
+                  padding: '6px 14px', border: 'none', cursor: 'pointer',
+                  fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+                  background: 'transparent',
+                  color: ongletActif === type ? ISP.burgundy : ISP.muted,
+                  borderBottom: `2px solid ${ongletActif === type ? ISP.burgundy : 'transparent'}`,
+                  marginBottom: -1.5, transition: 'all .15s',
+                }}>
+                {labels[type]}
+              </button>
+            )
+          })}
+        </div>
+      )}
 
-  <div>
+      {/* Filtres pour l'onglet actif */}
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
+
+        {/* ─── VIN */}
+        {ongletActif === 'vin' && parametres.types.includes('vin') && (
+          <>
+            <FiltreGroupe label="COULEUR"
+              options={[
+                { val: 'rouge', label: 'Rouge' }, { val: 'blanc', label: 'Blanc' },
+                { val: 'rosé', label: 'Rosé' }, { val: 'orange', label: 'Orange' },
+              ]}
+              selected={getFiltre('vin', 'couleur')}
+              onToggle={(v) => toggleFiltre('vin', 'couleur', v)}
+              accentColor={ISP.burgundy}
+              bgColor='#F5E6E8'
+            />
+            <FiltreGroupe label="STYLE"
+              options={[
+                { val: 'léger et frais', label: 'Léger & frais' },
+                { val: 'charnu et puissant', label: 'Charnu' },
+                { val: 'accords régionaux', label: 'Régional' },
+                { val: 'vins naturels', label: 'Naturel / bio' },
+                { val: 'classique', label: 'Classique' },
+                { val: 'vins de garde', label: 'De garde' },
+              ]}
+              selected={getFiltre('vin', 'style')}
+              onToggle={(v) => toggleFiltre('vin', 'style', v)}
+              accentColor={ISP.terracotta}
+              bgColor='#F9EDE7'
+            />
+          </>
+        )}
+
+        {/* ─── BIÈRE */}
+        {ongletActif === 'biere' && parametres.types.includes('biere') && (
+          <>
+            <FiltreGroupe label="FAMILLE"
+              options={[
+                { val: 'lager', label: 'Lager' }, { val: 'ale', label: 'Ale' },
+                { val: 'ipa', label: 'IPA' }, { val: 'stout', label: 'Stout / Porter' },
+                { val: 'blanche', label: 'Blanche' }, { val: 'ambrée', label: 'Ambrée' },
+                { val: 'sour', label: 'Sour / Acide' }, { val: 'craft', label: 'Craft locale' },
+              ]}
+              selected={getFiltre('biere', 'famille')}
+              onToggle={(v) => toggleFiltre('biere', 'famille', v)}
+              accentColor='#854F0B'
+              bgColor='#FDF3E3'
+            />
+            <FiltreGroupe label="INTENSITÉ"
+              options={[
+                { val: 'légère', label: 'Légère (- de 5°)' },
+                { val: 'moyenne', label: 'Moyenne (5-7°)' },
+                { val: 'forte', label: 'Forte (+ de 7°)' },
+              ]}
+              selected={getFiltre('biere', 'intensite')}
+              onToggle={(v) => toggleFiltre('biere', 'intensite', v)}
+              accentColor='#854F0B'
+              bgColor='#FDF3E3'
+            />
+          </>
+        )}
+
+        {/* ─── PÉTILLANTS */}
+        {ongletActif === 'petillant' && parametres.types.includes('petillant') && (
+          <>
+            <FiltreGroupe label="FAMILLE"
+              options={[
+                { val: 'champagne', label: 'Champagne' },
+                { val: 'crémant', label: 'Crémant' },
+                { val: 'prosecco', label: 'Prosecco' },
+                { val: 'cava', label: 'Cava' },
+                { val: 'pétillant naturel', label: 'Pét-nat' },
+                { val: 'eau pétillante premium', label: 'Eau gazeuse premium' },
+              ]}
+              selected={getFiltre('petillant', 'famille')}
+              onToggle={(v) => toggleFiltre('petillant', 'famille', v)}
+              accentColor='#5A6E99'
+              bgColor='#EEF1FA'
+            />
+            <FiltreGroupe label="DOSAGE"
+              options={[
+                { val: 'brut nature', label: 'Brut nature' },
+                { val: 'extra brut', label: 'Extra brut' },
+                { val: 'brut', label: 'Brut' },
+                { val: 'demi-sec', label: 'Demi-sec' },
+              ]}
+              selected={getFiltre('petillant', 'dosage')}
+              onToggle={(v) => toggleFiltre('petillant', 'dosage', v)}
+              accentColor='#5A6E99'
+              bgColor='#EEF1FA'
+            />
+          </>
+        )}
+
+        {/* ─── SPIRITUEUX */}
+        {ongletActif === 'spiritueux' && parametres.types.includes('spiritueux') && (
+          <>
+            <FiltreGroupe label="FAMILLE"
+              options={[
+                { val: 'whisky', label: 'Whisky / Bourbon' },
+                { val: 'cognac', label: 'Cognac / Armagnac' },
+                { val: 'rhum', label: 'Rhum' },
+                { val: 'gin', label: 'Gin' },
+                { val: 'vodka', label: 'Vodka' },
+                { val: 'calvados', label: 'Calvados' },
+                { val: 'mezcal', label: 'Mezcal / Tequila' },
+                { val: 'liqueur', label: 'Liqueur' },
+              ]}
+              selected={getFiltre('spiritueux', 'famille')}
+              onToggle={(v) => toggleFiltre('spiritueux', 'famille', v)}
+              accentColor='#7A4F1E'
+              bgColor='#F7EFE4'
+            />
+            <FiltreGroupe label="SERVICE"
+              options={[
+                { val: 'sec', label: 'Sec / Neat' },
+                { val: 'cocktail', label: 'En cocktail' },
+                { val: 'digestif', label: 'Digestif' },
+                { val: 'apéritif', label: 'Apéritif' },
+              ]}
+              selected={getFiltre('spiritueux', 'service')}
+              onToggle={(v) => toggleFiltre('spiritueux', 'service', v)}
+              accentColor='#7A4F1E'
+              bgColor='#F7EFE4'
+            />
+          </>
+        )}
+
+        {/* ─── SANS ALCOOL */}
+        {ongletActif === 'sans_alcool' && parametres.types.includes('sans_alcool') && (
+          <>
+            <FiltreGroupe label="FAMILLE"
+              options={[
+                { val: 'kombucha', label: 'Kombucha' },
+                { val: 'jus frais', label: 'Jus frais' },
+                { val: 'eau aromatisée', label: 'Eau aromatisée' },
+                { val: 'thé glacé', label: 'Thé glacé' },
+                { val: 'kéfir', label: 'Kéfir' },
+                { val: 'limonade artisanale', label: 'Limonade artisanale' },
+                { val: 'shrub', label: 'Shrub / Vinaigre de fruit' },
+                { val: 'mocktail', label: 'Mocktail' },
+              ]}
+              selected={getFiltre('sans_alcool', 'famille')}
+              onToggle={(v) => toggleFiltre('sans_alcool', 'famille', v)}
+              accentColor={ISP.sage}
+              bgColor={ISP.sagePale}
+            />
+            <FiltreGroupe label="INTENSITÉ"
+              options={[
+                { val: 'léger et désaltérant', label: 'Léger & désaltérant' },
+                { val: 'fruité et vif', label: 'Fruité & vif' },
+                { val: 'complexe et fermenté', label: 'Complexe & fermenté' },
+                { val: 'doux et rond', label: 'Doux & rond' },
+              ]}
+              selected={getFiltre('sans_alcool', 'intensite')}
+              onToggle={(v) => toggleFiltre('sans_alcool', 'intensite', v)}
+              accentColor={ISP.sage}
+              bgColor={ISP.sagePale}
+            />
+          </>
+        )}
+
+      </div>
+    </div>
+  )}
+
+  {/* Budget — commun à tous les types */}
+  <div style={{ borderTop: `1px dashed ${ISP.rule}`, paddingTop: 12 }}>
     <div style={{ fontSize: 11, fontWeight: 700, color: ISP.muted, marginBottom: 6 }}>BUDGET BOUTEILLE</div>
     <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
       {['- de 20€', '20-50€', '50-100€', '+ de 100€', 'Les trois niveaux'].map(b => (
         <button key={b} onClick={() => setParametres(prev => ({ ...prev, budget: b }))}
-          style={{ padding: '5px 12px', borderRadius: 999, border: `1px solid ${parametres.budget === b ? ISP.sage : ISP.rule}`, background: parametres.budget === b ? ISP.sagePale : ISP.card, color: parametres.budget === b ? ISP.sage : ISP.muted, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+          style={{
+            padding: '5px 12px', borderRadius: 999,
+            border: `1px solid ${parametres.budget === b ? ISP.sage : ISP.rule}`,
+            background: parametres.budget === b ? ISP.sagePale : ISP.card,
+            color: parametres.budget === b ? ISP.sage : ISP.muted,
+            fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          }}>
           {b}
         </button>
       ))}
     </div>
   </div>
 
+  {/* Cave priorité */}
   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
     <button onClick={() => setParametres(prev => ({ ...prev, cave_priorite: !prev.cave_priorite }))}
       style={{ width: 36, height: 20, borderRadius: 999, background: parametres.cave_priorite ? ISP.burgundy : ISP.rule, border: 'none', cursor: 'pointer', position: 'relative' as const, flexShrink: 0, transition: 'background .2s' }}>
