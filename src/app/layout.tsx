@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Nunito } from "next/font/google";
 import "./globals.css";
+import { TooltipProvider } from '@/context/TooltipContext';
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -25,7 +26,11 @@ export default function RootLayout({
       lang="fr"
       className={`${nunito.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <TooltipProvider>
+          {children}
+        </TooltipProvider>
+      </body>
     </html>
   );
 }
