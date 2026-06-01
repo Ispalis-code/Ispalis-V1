@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Footer from '@/components/Footer'
+import Tooltip from '@/components/Tooltip';
 
 const ISP = {
   burgundy: '#5E1119',
@@ -211,17 +212,19 @@ export default function Dashboard() {
           {erreur}
         </div>
       )}
-      <button onClick={genererAccords} disabled={loading} style={{ marginTop: 4, background: loading ? ISP.muted : ISP.burgundy, color: ISP.card, border: 'none', borderRadius: 14, padding: '16px 22px', fontFamily: 'inherit', fontWeight: 800, fontSize: 15.5, cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, boxShadow: '0 8px 22px -10px rgba(94,17,25,.45)', transition: 'all .2s', letterSpacing: '-0.005em' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-          <SparkleIcon size={17} color={ISP.ochre} />
-          {loading ? 'Génération en cours…' : 'Générer les accords Ispalis'}
-        </span>
-        {!loading && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 700, opacity: 0.75 }}>
-            Acte II <ArrowRightIcon size={14} />
-          </span>
-        )}
-      </button>
+    <Tooltip text="Génère instantanément les meilleurs accords mets-boissons pour chaque plat saisi" position="top">
+  <button onClick={genererAccords} disabled={loading} style={{ marginTop: 4, background: loading ? ISP.muted : ISP.burgundy, color: ISP.card, border: 'none', borderRadius: 14, padding: '16px 22px', fontFamily: 'inherit', fontWeight: 800, fontSize: 15.5, cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, boxShadow: '0 8px 22px -10px rgba(94,17,25,.45)', transition: 'all .2s', letterSpacing: '-0.005em', width: '100%' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+      <SparkleIcon size={17} color={ISP.ochre} />
+      {loading ? 'Génération en cours…' : 'Générer les accords Ispalis'}
+    </span>
+    {!loading && (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 700, opacity: 0.75 }}>
+        Acte II <ArrowRightIcon size={14} />
+      </span>
+    )}
+  </button>
+</Tooltip>
     </section>
   )
 
@@ -310,13 +313,21 @@ export default function Dashboard() {
           <IspalisLogo size={24} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <NavBtn label="Carte" onClick={() => router.push('/carte')} />
-          <NavBtn label="📱 Service" onClick={() => router.push('/service')} />
-          <NavBtn label="Cave" badge={stock.length || undefined} onClick={() => router.push('/stock')} />
-          <NavBtn label="Paramètres" onClick={() => router.push('/parametres')} />
-          <div style={{ width: 1, height: 22, background: ISP.rule, margin: '0 8px' }} />
-          <NavBtn label="Déconnexion" muted onClick={handleDeconnexion} />
-        </div>
+  <Tooltip text="Importez votre carte et générez des accords pour chaque plat" position="bottom">
+    <NavBtn label="Carte" onClick={() => router.push('/carte')} />
+  </Tooltip>
+  <Tooltip text="Vue salle en temps réel — consultez les accords pendant le service" position="bottom">
+    <NavBtn label="📱 Service" onClick={() => router.push('/service')} />
+  </Tooltip>
+  <Tooltip text="Gérez votre cave et importez votre stock de vins et boissons" position="bottom">
+    <NavBtn label="Cave" badge={stock.length || undefined} onClick={() => router.push('/stock')} />
+  </Tooltip>
+  <Tooltip text="Personnalisez le ton et le style de vos accords générés" position="bottom">
+    <NavBtn label="Paramètres" onClick={() => router.push('/parametres')} />
+  </Tooltip>
+  <div style={{ width: 1, height: 22, background: ISP.rule, margin: '0 8px' }} />
+  <NavBtn label="Déconnexion" muted onClick={handleDeconnexion} />
+</div>
       </nav>
 
       {/* SPLIT SCREEN si accords générés ou en cours */}
