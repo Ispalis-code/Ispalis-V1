@@ -131,6 +131,119 @@ function AlertesStock({ alertes }: { alertes: any[] }) {
     </div>
   )
 }
+
+function estEnCave(nomVin: string, stock: any[]): boolean {
+  if (!nomVin) return false
+  const needle = nomVin.toLowerCase().trim()
+  return stock.some(s => {
+    const ref = `${s.nom_reference} ${s.millesime || ''}`.toLowerCase().trim()
+    return ref === needle
+  })
+}
+
+function AccordCard({ label, data, color, stock }: {
+  label: string
+  data: any
+  color: string
+  stock: any[]
+}) {
+  const [alternative, setAlternative] = useState<any>(null)
+  const [loadingAlt, setLoadingAlt] = useState(false)
+  const enCave = estEnCave(data?.vin, stock)
+
+  const trouverAlternative = async () => {
+    setLoadingAlt(true)
+    try {
+      const stockNoms = stock.map(s => `${s.nom_reference} ${s.millesime || ''}`.trim()).join(', ')
+      const res = await fetch('/api/recommandations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plats: [`Trouver dans ma cave une alternative au vin suivant : "${data?.vin}". Cave disponible : ${stockNoms}. Réponds uniquement avec le nom du vin de remplacement le plus proche et son argument d'accord en 1 phrase.`],
+          stock: stock.map(s => ({ nom: `${s.nom_reference} ${s.millesime || ''}`.trim(), quantite: s.quantite, jours_sans_mouvement: 30 })),
+          ton: 'professionnel',
+          mode_alternatif: true,
+        }),
+      })
+      const result = await res.json()
+      if (result.success && result.data?.accords?.[0]) {
+        const acc = result.data.accords[0]
+        const altData = acc.accord_accessible || acc.accord_intermediaire || acc.accord_prestige
+        setAlternative(altData)
+      }
+    } catch { console.error('Erreur alternative') }
+    setLoadingAlt(false)
+  }
+
+  return (
+    <div style={{ background: ISP.paperWarm, borderRadius: 12, padding: '16px 16px 18px', borderTop: `4px solid ${color}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div style={{ fontSize: 10.5, fontWeight: 800, color, textTransform: 'uppercase' as const, letterSpacing: '0.12em' }}>
+          {label}
+        </div>
+        {enCave && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            background: ISP.sagePale, color: ISP.sage,
+            fontSize: 10, fontWeight: 800, padding: '2px 8px',
+            borderRadius: 999, letterSpacing: '0.06em',
+          }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: ISP.sage, flexShrink: 0 }} />
+            En cave
+          </div>
+        )}
+      </div>
+
+      <div style={{ fontWeight: 800, fontSize: 15, color: ISP.ink, lineHeight: 1.3 }}>{data?.vin}</div>
+      <div style={{ color: ISP.muted, fontSize: 12, marginTop: 4, fontWeight: 600, display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+        <span>🍷 verre : {data?.prix_verre}</span>
+        <span style={{ color: ISP.rule }}>·</span>
+        <span>🍾 bouteille : {data?.prix_bouteille}</span>
+      </div>
+      <div style={{ fontSize: 13, fontStyle: 'italic', color: ISP.ink, marginTop: 10, lineHeight: 1.45 }}>
+        « {data?.argument} »
+      </div>
+
+      {!enCave && !alternative && (
+        <button
+          onClick={trouverAlternative}
+          disabled={loadingAlt}
+          style={{
+            marginTop: 12, padding: '6px 12px', borderRadius: 8,
+            border: `1px dashed ${ISP.sage}`,
+            background: 'transparent', color: ISP.sage,
+            fontFamily: 'inherit', fontSize: 11.5, fontWeight: 700,
+            cursor: loadingAlt ? 'wait' : 'pointer',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            transition: 'all .15s',
+          }}>
+          {loadingAlt ? '⏳ Recherche…' : '🔍 Trouver une alternative en cave'}
+        </button>
+      )}
+
+      {alternative && (
+        <div style={{
+          marginTop: 12, padding: '10px 12px', borderRadius: 10,
+          background: ISP.sagePale, borderLeft: `3px solid ${ISP.sage}`,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: ISP.sage }} />
+            <span style={{ fontSize: 10, fontWeight: 800, color: ISP.sage, textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>
+              Alternative en cave
+            </span>
+          </div>
+          <div style={{ fontWeight: 800, fontSize: 13.5, color: ISP.ink }}>{alternative.vin}</div>
+          {alternative.argument && (
+            <div style={{ fontSize: 12, fontStyle: 'italic', color: ISP.muted, marginTop: 3, lineHeight: 1.4 }}>
+              « {alternative.argument} »
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const [plats, setPlats] = useState(['', '', '', '', ''])
   const [stock, setStock] = useState<any[]>([])
@@ -251,23 +364,14 @@ export default function Dashboard() {
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, marginBottom: 14 }}>
-            {[
-              { label: 'Accessible', data: accord.accord_accessible, color: ISP.sage },
-              { label: 'Intermédiaire', data: accord.accord_intermediaire, color: ISP.terracotta },
-              { label: 'Prestige', data: accord.accord_prestige, color: ISP.burgundy },
-            ].map(({ label, data, color }) => (
-              <div key={label} style={{ background: ISP.paperWarm, borderRadius: 12, padding: '16px 16px 18px', borderTop: `4px solid ${color}` }}>
-                <div style={{ fontSize: 10.5, fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8 }}>{label}</div>
-                <div style={{ fontWeight: 800, fontSize: 15, color: ISP.ink, lineHeight: 1.3 }}>{data?.vin}</div>
-                <div style={{ color: ISP.muted, fontSize: 12, marginTop: 4, fontWeight: 600, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <span>🍷 verre : {data?.prix_verre}</span>
-                  <span style={{ color: ISP.rule }}>·</span>
-                  <span>🍾 bouteille : {data?.prix_bouteille}</span>
-                </div>
-                <div style={{ fontSize: 13, fontStyle: 'italic', color: ISP.ink, marginTop: 10, lineHeight: 1.45 }}>« {data?.argument} »</div>
-              </div>
-            ))}
-          </div>
+  {[
+    { label: 'Accessible', data: accord.accord_accessible, color: ISP.sage },
+    { label: 'Intermédiaire', data: accord.accord_intermediaire, color: ISP.terracotta },
+    { label: 'Prestige', data: accord.accord_prestige, color: ISP.burgundy },
+  ].map(({ label, data, color }) => (
+    <AccordCard key={label} label={label} data={data} color={color} stock={stock} />
+  ))}
+</div>
           {accord.accord_sans_alcool && (
             <div style={{ background: ISP.sagePale, borderRadius: 12, padding: '14px 18px', display: 'flex', gap: 14, alignItems: 'flex-start', borderLeft: `4px solid ${ISP.sage}` }}>
               <div style={{ fontSize: 10.5, fontWeight: 800, color: ISP.sage, textTransform: 'uppercase', letterSpacing: '0.12em', whiteSpace: 'nowrap', paddingTop: 1 }}>Sans alcool</div>
