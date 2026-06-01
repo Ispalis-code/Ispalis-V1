@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import Tooltip from '@/components/Tooltip'
+import { useTooltip } from '@/context/TooltipContext'
 
 // ─── Ispalis tokens
 const ISP = {
@@ -68,7 +70,7 @@ const TYPE_ETABLISSEMENT = [
 ]
 
 export default function Parametres() {
-  const [nom, setNom] = useState('')
+ const [nom, setNom] = useState('')
   const [type, setType] = useState('restaurant')
   const [ton, setTon] = useState('professionnel')
   const [email, setEmail] = useState('')
@@ -76,6 +78,7 @@ export default function Parametres() {
   const [saved, setSaved] = useState(false)
   const supabase = createClient()
   const router = useRouter()
+  const { tooltipsEnabled, toggleTooltips } = useTooltip()
 
   useEffect(() => { chargerProfil() }, [])
 
@@ -263,6 +266,57 @@ export default function Parametres() {
               quote="Ce vin va super bien avec vos Saint-Jacques !"
               onClick={() => setTon('decontracte')}
             />
+          </div>
+        </section>
+
+      {/* Infobulles */}
+        <section style={{
+          background: ISP.card, borderRadius: 18,
+          padding: '26px 30px',
+          boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)',
+          display: 'flex', flexDirection: 'column', gap: 14,
+        }}>
+          <div style={{ paddingBottom: 12, borderBottom: `2px solid ${ISP.ink}` }}>
+            <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: ISP.terracotta, fontWeight: 800 }}>
+              Acte IV
+            </div>
+            <h2 style={{ fontSize: 20, fontWeight: 800, margin: '4px 0 0', letterSpacing: '-0.01em' }}>
+              Interface
+            </h2>
+            <p style={{ fontSize: 13, color: ISP.muted, margin: '6px 0 0', lineHeight: 1.5 }}>
+              Personnalisez votre expérience sur Ispalis.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
+            <div>
+              <div style={{ fontSize: 14.5, fontWeight: 800, color: ISP.ink }}>Infobulles d'aide</div>
+              <div style={{ fontSize: 12.5, color: ISP.muted, marginTop: 3 }}>
+                Affiche une explication au survol des boutons
+              </div>
+            </div>
+            <Tooltip text={tooltipsEnabled ? 'Cliquez pour désactiver les infobulles' : 'Cliquez pour activer les infobulles'} position="left">
+              <button
+                type="button"
+                onClick={toggleTooltips}
+                aria-label="Activer/désactiver les infobulles"
+                style={{
+                  position: 'relative', width: 48, height: 26, borderRadius: 999,
+                  background: tooltipsEnabled ? ISP.burgundy : ISP.rule,
+                  border: 'none', cursor: 'pointer',
+                  transition: 'background .2s', flexShrink: 0,
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 3,
+                  left: tooltipsEnabled ? 25 : 3,
+                  width: 20, height: 20, borderRadius: '50%',
+                  background: '#fff',
+                  boxShadow: '0 1px 4px rgba(0,0,0,.18)',
+                  transition: 'left .2s',
+                }} />
+              </button>
+            </Tooltip>
           </div>
         </section>
 
