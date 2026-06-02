@@ -140,34 +140,172 @@ function FilterChip({ label, count, active, color, onClick }: { label: string; c
   )
 }
 
-function RefRow({ refData, onDelete }: { refData: any; onDelete: () => void }) {
+function RefRow({ refData, seuilsGlobaux, onDelete, onUpdateSeuil }: {
+  refData: any
+  seuilsGlobaux: Record<string, number>
+  onDelete: () => void
+  onUpdateSeuil: (id: string, seuil: number | null) => void
+}) {
+  const [editingSeuil, setEditingSeuil] = useState(false)
+  const [seuilInput, setSeuilInput] = useState(
+    refData.seuil_alerte !== null && refData.seuil_alerte !== undefined
+      ? String(refData.seuil_alerte)
+      : ''
+  )
+
   const c = couleurDuVin(refData.couleur)
+  const seuilEffectif = getSeuilEffectif(refData, seuilsGlobaux)
+  const enAlerte = (refData.quantite || 0) <= seuilEffectif && seuilEffectif > 0
+  const aSeuilPerso = refData.seuil_alerte !== null && refData.seuil_alerte !== undefined
+
+  const sauvegarderSeuil = () => {
+    const val = seuilInput.trim()
+    if (val === '') {
+      onUpdateSeuil(refData.id, null) // reset → seuil global
+    } else {
+      const n = parseInt(val)
+      if (!isNaN(n) && n >= 0) onUpdateSeuil(refData.id, n)
+    }
+    setEditingSeuil(false)
+  }
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 12, background: ISP.paperWarm, border: `1px solid ${ISP.rule}` }}>
-      <div style={{ flexShrink: 0 }}><BottleI color={c} size={28} /></div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' as const }}>
-          <div style={{ fontSize: 14.5, fontWeight: 800, color: ISP.ink, letterSpacing: '-0.005em', lineHeight: 1.25 }}>{refData.nom_reference}</div>
-          {refData.millesime && <span style={{ fontSize: 11.5, fontWeight: 800, color: ISP.muted }}>· {refData.millesime}</span>}
+    <div style={{
+      borderRadius: 12, background: ISP.paperWarm,
+      border: `1px solid ${enAlerte ? `${ISP.ochre}80` : ISP.rule}`,
+      overflow: 'hidden', transition: 'border-color .2s',
+    }}>
+      {/* Ligne principale */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px' }}>
+        <div style={{ flexShrink: 0 }}><BottleI color={c} size={28} /></div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' as const }}>
+            <div style={{ fontSize: 14.5, fontWeight: 800, color: ISP.ink, letterSpacing: '-0.005em', lineHeight: 1.25 }}>
+              {refData.nom_reference}
+            </div>
+            {refData.millesime && (
+              <span style={{ fontSize: 11.5, fontWeight: 800, color: ISP.muted }}>· {refData.millesime}</span>
+            )}
+          </div>
+          <div style={{ fontSize: 12, color: ISP.muted, marginTop: 2, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
+            {refData.appellation && <span>{refData.appellation}</span>}
+            {refData.appellation && <span style={{ opacity: 0.4 }}>·</span>}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700, color: c }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: c }} />
+              {labelDuVin(refData.couleur)}
+            </span>
+          </div>
         </div>
-        <div style={{ fontSize: 12, color: ISP.muted, marginTop: 2, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
-          {refData.appellation && <span>{refData.appellation}</span>}
-          {refData.appellation && <span style={{ opacity: 0.4 }}>·</span>}
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700, color: c }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: c }} />
-            {labelDuVin(refData.couleur)}
-          </span>
+
+        {/* Badge alerte */}
+        {enAlerte && (
+          <div style={{
+            flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4,
+            background: '#FFF7E0', color: '#7A5210',
+            fontSize: 10, fontWeight: 800, padding: '3px 8px',
+            borderRadius: 999, border: '1px solid #EEA30060',
+          }}>
+            <span style={{ fontSize: 11 }}>⚠</span>
+            Stock bas
+          </div>
+        )}
+
+        {/* Quantité */}
+        <div style={{
+          flexShrink: 0, background: ISP.card, borderRadius: 8,
+          padding: '6px 11px', textAlign: 'center' as const,
+          minWidth: 56, border: `1px solid ${enAlerte ? `${ISP.ochre}60` : ISP.rule}`,
+        }}>
+          <div style={{
+            fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1,
+            color: enAlerte ? '#7A5210' : ISP.burgundy,
+          }}>
+            {refData.quantite}
+          </div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: ISP.muted, letterSpacing: '0.06em', textTransform: 'uppercase' as const, marginTop: 2 }}>
+            bouteilles
+          </div>
         </div>
+
+        {/* Bouton seuil perso */}
+        <button
+          onClick={() => setEditingSeuil(e => !e)}
+          title="Définir un seuil d'alerte personnalisé"
+          style={{
+            flexShrink: 0, width: 30, height: 30, borderRadius: 8,
+            border: `1px solid ${aSeuilPerso ? ISP.terracotta : ISP.rule}`,
+            background: aSeuilPerso ? `${ISP.terracotta}12` : 'transparent',
+            color: aSeuilPerso ? ISP.terracotta : ISP.muted,
+            cursor: 'pointer', display: 'grid', placeItems: 'center',
+            fontSize: 13, transition: 'all .15s',
+          }}>
+          🔔
+        </button>
+
+        <button
+          onClick={onDelete}
+          style={{
+            flexShrink: 0, width: 30, height: 30, borderRadius: 8,
+            border: 'none', background: 'transparent',
+            color: ISP.muted, cursor: 'pointer',
+            display: 'grid', placeItems: 'center', transition: 'all .15s',
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `${ISP.burgundy}15`; (e.currentTarget as HTMLButtonElement).style.color = ISP.burgundy }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = ISP.muted }}>
+          <TrashIcon size={15} />
+        </button>
       </div>
-      <div style={{ flexShrink: 0, background: ISP.card, borderRadius: 8, padding: '6px 11px', textAlign: 'center' as const, minWidth: 56, border: `1px solid ${ISP.rule}` }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: ISP.burgundy, letterSpacing: '-0.02em', lineHeight: 1 }}>{refData.quantite}</div>
-        <div style={{ fontSize: 9, fontWeight: 700, color: ISP.muted, letterSpacing: '0.06em', textTransform: 'uppercase' as const, marginTop: 2 }}>bouteilles</div>
-      </div>
-      <button onClick={onDelete} style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 8, border: 'none', background: 'transparent', color: ISP.muted, cursor: 'pointer', display: 'grid', placeItems: 'center', transition: 'all .15s' }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `${ISP.burgundy}15`; (e.currentTarget as HTMLButtonElement).style.color = ISP.burgundy }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = ISP.muted }}>
-        <TrashIcon size={15} />
-      </button>
+
+      {/* Panneau seuil personnalisé */}
+      {editingSeuil && (
+        <div style={{
+          padding: '10px 12px', borderTop: `1px dashed ${ISP.rule}`,
+          background: ISP.card, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const,
+        }}>
+          <div style={{ fontSize: 11.5, color: ISP.muted, fontWeight: 700, flex: 1 }}>
+            Seuil d'alerte perso — seuil global actuel :
+            <span style={{ color: ISP.ink, marginLeft: 4 }}>
+              {seuilEffectif === 0 ? 'désactivé' : `${seuilEffectif} bouteilles`}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="number" min={0} max={99}
+              value={seuilInput}
+              onChange={e => setSeuilInput(e.target.value)}
+              placeholder={`${seuilEffectif}`}
+              style={{
+                width: 70, padding: '6px 10px', borderRadius: 8,
+                border: `1.5px solid ${ISP.terracotta}`, fontFamily: 'inherit',
+                fontSize: 13, fontWeight: 700, color: ISP.ink,
+                background: ISP.card, outline: 'none',
+              }}
+            />
+            <button
+              onClick={sauvegarderSeuil}
+              style={{
+                padding: '6px 12px', borderRadius: 8,
+                background: ISP.terracotta, color: '#fff',
+                border: 'none', fontFamily: 'inherit',
+                fontSize: 12, fontWeight: 800, cursor: 'pointer',
+              }}>
+              OK
+            </button>
+            {aSeuilPerso && (
+              <button
+                onClick={() => { onUpdateSeuil(refData.id, null); setSeuilInput(''); setEditingSeuil(false) }}
+                style={{
+                  padding: '6px 10px', borderRadius: 8,
+                  background: 'transparent', color: ISP.muted,
+                  border: `1px solid ${ISP.rule}`, fontFamily: 'inherit',
+                  fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
+                }}>
+                Utiliser le seuil global
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -181,6 +319,25 @@ function Field({ label, required, children }: { label: string; required?: boolea
     </label>
   )
 }
+function getSeuilEffectif(ref: any, seuilsGlobaux: Record<string, number>): number {
+  // Seuil perso défini sur la référence — prioritaire
+  if (ref.seuil_alerte !== null && ref.seuil_alerte !== undefined) return ref.seuil_alerte
+
+  // Sinon on déduit le type et on prend le seuil global
+  const type = ref.type_boisson || 'vin'
+  const couleur = ref.couleur || 'rouge'
+
+  if (type === 'biere') return seuilsGlobaux.biere ?? 6
+  if (type === 'spiritueux') return seuilsGlobaux.spiritueux ?? 1
+  if (type === 'sans_alcool') return seuilsGlobaux.sans_alcool ?? 6
+  if (type === 'champagne') return seuilsGlobaux.bulles ?? 2
+
+  // Vin — on affine par couleur
+  if (couleur === 'blanc') return seuilsGlobaux.vin_blanc ?? 3
+  if (couleur === 'rose') return seuilsGlobaux.rose ?? 2
+  if (couleur === 'effervescent') return seuilsGlobaux.bulles ?? 2
+  return seuilsGlobaux.vin_rouge ?? 3
+}
 export default function Stock() {
   const [references, setReferences] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -189,6 +346,10 @@ export default function Stock() {
   const [importOK, setImportOK] = useState(false)
   const [filter, setFilter] = useState<string[]>(['all'])
   const [search, setSearch] = useState('')
+  const [seuilsGlobaux, setSeuilsGlobaux] = useState<Record<string, number>>({
+  vin_rouge: 3, vin_blanc: 3, rose: 2, bulles: 2,
+  biere: 6, spiritueux: 1, sans_alcool: 6,
+})
   const [nom, setNom] = useState('')
   const [appellation, setAppellation] = useState('')
   const [couleur, setCouleur] = useState('rouge')
@@ -218,6 +379,8 @@ export default function Stock() {
     if (!user) { router.push('/connexion'); return }
     const { data } = await supabase.from('stocks').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
     if (data) setReferences(data)
+    const { data: userData } = await supabase.from('users').select('seuils_alertes').eq('user_id', user.id).single()
+if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.seuils_alertes }))
   }
 
   const ajouterReference = async (e: React.FormEvent) => {
@@ -241,6 +404,10 @@ export default function Stock() {
     await supabase.from('stocks').delete().eq('id', id)
     await chargerStock()
   }
+  const mettreAJourSeuil = async (id: string, seuil: number | null) => {
+  await supabase.from('stocks').update({ seuil_alerte: seuil }).eq('id', id)
+  await chargerStock()
+}
 
   const viderStock = async () => {
     if (!confirm('Supprimer toutes les references de votre cave ?')) return
@@ -545,8 +712,14 @@ export default function Stock() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 560, overflowY: 'auto', paddingRight: 4, margin: '0 -4px' }}>
               {filtered.map((ref: any) => (
-                <RefRow key={ref.id} refData={ref} onDelete={() => supprimerReference(ref.id)} />
-              ))}
+  <RefRow
+    key={ref.id}
+    refData={ref}
+    seuilsGlobaux={seuilsGlobaux}
+    onDelete={() => supprimerReference(ref.id)}
+    onUpdateSeuil={mettreAJourSeuil}
+  />
+))}
             </div>
           )}
         </section>
