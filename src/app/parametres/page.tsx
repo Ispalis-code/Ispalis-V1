@@ -79,6 +79,17 @@ export default function Parametres() {
   const supabase = createClient()
   const router = useRouter()
   const { tooltipsEnabled, toggleTooltips } = useTooltip()
+  const SEUILS_DEFAUT: Record<string, number> = {
+  vin_rouge: 3,
+  vin_blanc: 3,
+  rose: 2,
+  bulles: 2,
+  biere: 6,
+  spiritueux: 1,
+  sans_alcool: 6,
+}
+
+const [seuils, setSeuils] = useState<Record<string, number>>(SEUILS_DEFAUT)
 
   useEffect(() => { chargerProfil() }, [])
 
@@ -91,6 +102,7 @@ export default function Parametres() {
       setNom(data.nom_etablissement || '')
       setType(data.type_chr || 'restaurant')
       setTon(data.ton_maison || 'professionnel')
+      if (data.seuils_alertes) setSeuils({ ...SEUILS_DEFAUT, ...data.seuils_alertes })
     }
   }
 
@@ -102,7 +114,8 @@ export default function Parametres() {
     await supabase.from('users').update({
       nom_etablissement: nom,
       type_chr: type,
-      ton_maison: ton
+      ton_maison: ton,
+      seuils_alertes: seuils,
     }).eq('id', user.id)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
@@ -318,6 +331,105 @@ export default function Parametres() {
               </button>
             </Tooltip>
           </div>
+        </section>
+
+       {/* Alertes stock */}
+        <section style={{
+          background: ISP.card, borderRadius: 18,
+          padding: '26px 30px',
+          boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)',
+          display: 'flex', flexDirection: 'column', gap: 18,
+        }}>
+          <div style={{ paddingBottom: 12, borderBottom: `2px solid ${ISP.ink}` }}>
+            <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: ISP.terracotta, fontWeight: 800 }}>
+              Acte V
+            </div>
+            <h2 style={{ fontSize: 20, fontWeight: 800, margin: '4px 0 0', letterSpacing: '-0.01em' }}>
+              Alertes stock
+            </h2>
+            <p style={{ fontSize: 13, color: ISP.muted, margin: '6px 0 0', lineHeight: 1.5 }}>
+              Ispalis vous alerte quand une référence passe sous ce seuil. Ces valeurs s&apos;appliquent par défaut — vous pourrez les affiner référence par référence dans votre cave.
+            </p>
+          </div>
+
+          {[
+            { key: 'vin_rouge', label: 'Vin rouge', emoji: '🍷', max: 12 },
+            { key: 'vin_blanc', label: 'Vin blanc', emoji: '🥂', max: 12 },
+            { key: 'rose', label: 'Rosé', emoji: '🌸', max: 12 },
+            { key: 'bulles', label: 'Champagne & bulles', emoji: '✨', max: 12 },
+            { key: 'biere', label: 'Bière', emoji: '🍺', max: 24 },
+            { key: 'spiritueux', label: 'Spiritueux', emoji: '🥃', max: 6 },
+            { key: 'sans_alcool', label: 'Sans alcool', emoji: '🫧', max: 24 },
+          ].map(({ key, label, emoji, max }) => {
+            const val = seuils[key] ?? SEUILS_DEFAUT[key]
+            const pct = ((val - 1) / (max - 1)) * 100
+            const isDefault = val === SEUILS_DEFAUT[key]
+            return (
+              <div key={key} style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 16 }}>{emoji}</span>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: ISP.ink }}>{label}</span>
+                    {isDefault && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, color: ISP.muted,
+                        background: ISP.paper, padding: '1px 7px',
+                        borderRadius: 999, border: `1px solid ${ISP.rule}`,
+                      }}>
+                        défaut
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{
+                      fontSize: 15, fontWeight: 800, color: ISP.burgundy,
+                      background: `${ISP.burgundy}12`, padding: '2px 10px',
+                      borderRadius: 999, minWidth: 60, textAlign: 'center' as const,
+                    }}>
+                      {val === 0 ? 'Désactivé' : `< ${val} ${val === 1 ? 'unité' : 'unités'}`}
+                    </span>
+                    {!isDefault && (
+                      <button
+                        type="button"
+                        onClick={() => setSeuils(prev => ({ ...prev, [key]: SEUILS_DEFAUT[key] }))}
+                        style={{
+                          fontSize: 11, color: ISP.muted, background: 'transparent',
+                          border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                          fontWeight: 700, textDecoration: 'underline',
+                        }}>
+                        reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Slider */}
+                <div style={{ position: 'relative', height: 6, borderRadius: 999, background: ISP.rule }}>
+                  <div style={{
+                    position: 'absolute', left: 0, top: 0, height: '100%',
+                    width: `${pct}%`, borderRadius: 999,
+                    background: val === 0
+                      ? ISP.muted
+                      : `linear-gradient(90deg, ${ISP.burgundy}, ${ISP.terracotta})`,
+                    transition: 'width .1s',
+                  }} />
+                  <input
+                    type="range" min={0} max={max} step={1} value={val}
+                    onChange={e => setSeuils(prev => ({ ...prev, [key]: Number(e.target.value) }))}
+                    style={{
+                      position: 'absolute', inset: 0, width: '100%',
+                      height: '100%', opacity: 0, cursor: 'pointer', margin: 0,
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: ISP.muted }}>
+                  <span>Désactivé</span>
+                  <span>{max} unités</span>
+                </div>
+              </div>
+            )
+          })}
         </section>
 
         {/* Sticky save bar */}
