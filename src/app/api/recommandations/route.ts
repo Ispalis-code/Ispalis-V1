@@ -11,6 +11,12 @@ Sont interdits : cidre, biere.
 Sont autorises : toute forme de boissons normalement alcoolisees mais sans alcool, kombucha, kefir, eau aromatisee maison, jus de fruits frais, the glace, infusion froide, limonade artisanale, lait vegetal, bouillon froid, jus de legumes, shrub (vinaigre + fruits), mocktail aux herbes.
 Toujours preciser "artisanal" ou "maison" pour valoriser la suggestion.
 
+REGLE MATURITE — IMPORTANT :
+Si une référence de la cave a l'attribut "pas_encore_mature", tu peux la proposer MAIS tu dois :
+1. Ajouter "(pas encore à maturité — prêt en [année])" à la fin de l'argument
+2. Ne jamais la placer en accord "Prestige" si une autre référence mature est disponible en cave
+3. Privilegier une alternative mature de la cave pour le niveau Prestige
+
 Structure exacte pour UN seul plat :
 {
   "plat": "nom exact",
@@ -19,6 +25,20 @@ Structure exacte pour UN seul plat :
   "accord_prestige": {"vin": "appellation", "prix_verre": "12-20EUR", "prix_bouteille": "48-90EUR", "argument": "phrase courte"},
   "accord_sans_alcool": {"boisson": "boisson artisanale precise", "argument": "phrase courte"}
 }`;
+
+const anneeActuelle = new Date().getFullYear()
+
+const stockFormatted = stock.map(s => ({
+  nom: `${s.nom_reference} ${s.millesime || ''}`.trim(),
+  quantite: s.quantite,
+  jours_sans_mouvement: s.derniere_vente
+    ? Math.floor((new Date().getTime() - new Date(s.derniere_vente).getTime()) / (1000 * 60 * 60 * 24))
+    : 30,
+  // Nouveau : info maturité
+  pas_encore_mature: s.maturite_debut && anneeActuelle < s.maturite_debut
+    ? `pas encore à maturité — prêt à partir de ${s.maturite_debut}`
+    : null,
+}))
 
 const buildContraintes = (p: any): string => {
   if (!p) return ''
