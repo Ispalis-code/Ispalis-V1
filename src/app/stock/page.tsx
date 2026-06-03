@@ -140,34 +140,283 @@ function FilterChip({ label, count, active, color, onClick }: { label: string; c
   )
 }
 
-function RefRow({ refData, seuilsGlobaux, onDelete, onUpdateSeuil }: {
+function RefRow({ refData, seuilsGlobaux, onDelete, onUpdateSeuil, onUpdateMaturite }: {
   refData: any
   seuilsGlobaux: Record<string, number>
   onDelete: () => void
   onUpdateSeuil: (id: string, seuil: number | null) => void
+  onUpdateMaturite: (id: string, debut: number | null, fin: number | null, verrouillée: boolean) => void
 }) {
   const [editingSeuil, setEditingSeuil] = useState(false)
+  const [editingMaturite, setEditingMaturite] = useState(false)
   const [seuilInput, setSeuilInput] = useState(
     refData.seuil_alerte !== null && refData.seuil_alerte !== undefined
-      ? String(refData.seuil_alerte)
-      : ''
+      ? String(refData.seuil_alerte) : ''
   )
+  const [loadingMaturite, setLoadingMaturite] = useState(false)
+  const [debutInput, setDebutInput] = useState(refData.maturite_debut ? String(refData.maturite_debut) : '')
+  const [finInput, setFinInput] = useState(refData.maturite_fin ? String(refData.maturite_fin) : '')
 
   const c = couleurDuVin(refData.couleur)
   const seuilEffectif = getSeuilEffectif(refData, seuilsGlobaux)
   const enAlerte = (refData.quantite || 0) <= seuilEffectif && seuilEffectif > 0
   const aSeuilPerso = refData.seuil_alerte !== null && refData.seuil_alerte !== undefined
 
+  const anneeActuelle = new Date().getFullYear()
+  const pasEncoreMature = refData.maturite_debut && anneeActuelle < refData.maturite_debut
+  const tropVieux = refData.maturite_fin && anneeActuelle > refData.maturite_fin
+  const aMaturite = refData.maturite_debut && !pasEncoreMature && !tropVieux
+
+  const estimerMaturite = async () => {
+    setLoadingMaturite(true)
+    try {
+      const prompt = `Tu es un expert en œnologie. Estime la fenêtre de maturité optimale pour ce vin :
+Nom : ${refData.nom_reference}
+Appellation : ${refData.appellation || 'non précisée'}
+Millésime : ${refData.millesime || 'inconnu'}
+Couleur : ${refData.couleur}
+
+Réponds UNIQUEMENT en JSON, sans texte autour, sans markdown :
+{"debut": 2026, "fin": 2032}
+Les années doivent être des entiers. Si le millésime est inconnu, base-toi sur le type de vin.`
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 100,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
+      const data = await res.json()
+      const text = data.content?.[0]?.text || ''
+      const clean = text.replace(/```json|```/g, '').trim()
+      const parsed = JSON.parse(clean)
+      if (parsed.debut && parsed.fin) {
+        setDebutInput(String(parsed.debut))
+        setFinInput(String(parsed.fin))
+        onUpdateMaturite(refData.id, parsed.debut, parsed.fin, false)
+      }
+    } catch (e) {
+      console.error('Erreur estimation maturité', e)
+    }
+    setLoadingMaturite(false)
+    setEditingMaturite(true)
+  }
+
+  const sauvegarderMaturite = () => {
+    const debut = parseInt(debutInput)
+    const fin = parseInt(finInput)
+    if (!isNaN(debut) && !isNaN(fin) && fin >= debut) {
+      onUpdateMaturite(refData.id, debut, fin, true)
+    }
+    setEditingMaturite(false)
+  }
+
   const sauvegarderSeuil = () => {
     const val = seuilInput.trim()
-    if (val === '') {
-      onUpdateSeuil(refData.id, null) // reset → seuil global
-    } else {
+    if (val === '') { onUpdateSeuil(refData.id, null) }
+    else {
       const n = parseInt(val)
       if (!isNaN(n) && n >= 0) onUpdateSeuil(refData.id, n)
     }
     setEditingSeuil(false)
   }
+
+  // Badge maturité
+  const badgeMaturite = pasEncoreMature
+    ? { label: `Prêt en ${refData.maturite_debut}`, bg: '#EEF1FA', color: '#5A6E99', border: '#5A6E9940' }
+    : tropVieux
+    ? { label: 'Passé', bg: '#FBE9EB', color: ISP.burgundy, border: `${ISP.burgundy}40` }
+    : aMaturite
+    ? { label: '✓ À maturité', bg: ISP.sagePale, color: ISP.sage, border: `${ISP.sage}40` }
+    : null
+
+  return (
+    <div style={{
+      borderRadius: 12, background: ISP.paperWarm,
+      border: `1px solid ${pasEncoreMature ? '#5A6E9940' : enAlerte ? `${ISP.ochre}80` : ISP.rule}`,
+      overflow: 'hidden', transition: 'border-color .2s',
+    }}>
+      {/* Ligne principale */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px' }}>
+        <div style={{ flexShrink: 0 }}><BottleI color={pasEncoreMature ? '#5A6E99' : c} size={28} /></div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' as const }}>
+            <div style={{ fontSize: 14.5, fontWeight: 800, color: ISP.ink, letterSpacing: '-0.005em', lineHeight: 1.25 }}>
+              {refData.nom_reference}
+            </div>
+            {refData.millesime && (
+              <span style={{ fontSize: 11.5, fontWeight: 800, color: ISP.muted }}>· {refData.millesime}</span>
+            )}
+          </div>
+          <div style={{ fontSize: 12, color: ISP.muted, marginTop: 2, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' as const }}>
+            {refData.appellation && <span>{refData.appellation}</span>}
+            {refData.appellation && <span style={{ opacity: 0.4 }}>·</span>}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700, color: c }}>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: c }} />
+              {labelDuVin(refData.couleur)}
+            </span>
+            {/* Fenêtre de maturité si définie */}
+            {refData.maturite_debut && refData.maturite_fin && (
+              <span style={{ color: ISP.muted, fontSize: 11 }}>
+                · maturité {refData.maturite_debut}–{refData.maturite_fin}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Badges */}
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4, alignItems: 'flex-end' }}>
+          {badgeMaturite && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              background: badgeMaturite.bg, color: badgeMaturite.color,
+              fontSize: 10, fontWeight: 800, padding: '2px 8px',
+              borderRadius: 999, border: `1px solid ${badgeMaturite.border}`,
+              whiteSpace: 'nowrap' as const,
+            }}>
+              {badgeMaturite.label}
+            </div>
+          )}
+          {enAlerte && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              background: '#FFF7E0', color: '#7A5210',
+              fontSize: 10, fontWeight: 800, padding: '2px 8px',
+              borderRadius: 999, border: '1px solid #EEA30060',
+            }}>
+              ⚠ Stock bas
+            </div>
+          )}
+        </div>
+
+        {/* Quantité */}
+        <div style={{
+          flexShrink: 0, background: ISP.card, borderRadius: 8,
+          padding: '6px 11px', textAlign: 'center' as const,
+          minWidth: 56, border: `1px solid ${enAlerte ? `${ISP.ochre}60` : ISP.rule}`,
+        }}>
+          <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1, color: enAlerte ? '#7A5210' : ISP.burgundy }}>
+            {refData.quantite}
+          </div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: ISP.muted, letterSpacing: '0.06em', textTransform: 'uppercase' as const, marginTop: 2 }}>
+            bouteilles
+          </div>
+        </div>
+
+        {/* Bouton maturité */}
+        <button
+          onClick={() => !refData.maturite_debut ? estimerMaturite() : setEditingMaturite(e => !e)}
+          title="Fenêtre de maturité"
+          style={{
+            flexShrink: 0, width: 30, height: 30, borderRadius: 8,
+            border: `1px solid ${refData.maturite_debut ? (pasEncoreMature ? '#5A6E99' : ISP.sage) : ISP.rule}`,
+            background: refData.maturite_debut ? (pasEncoreMature ? '#EEF1FA' : ISP.sagePale) : 'transparent',
+            color: refData.maturite_debut ? (pasEncoreMature ? '#5A6E99' : ISP.sage) : ISP.muted,
+            cursor: loadingMaturite ? 'wait' : 'pointer',
+            display: 'grid', placeItems: 'center', fontSize: 13, transition: 'all .15s',
+          }}>
+          {loadingMaturite ? '⏳' : '🍇'}
+        </button>
+
+        {/* Bouton seuil */}
+        <button
+          onClick={() => setEditingSeuil(e => !e)}
+          title="Seuil d'alerte personnalisé"
+          style={{
+            flexShrink: 0, width: 30, height: 30, borderRadius: 8,
+            border: `1px solid ${aSeuilPerso ? ISP.terracotta : ISP.rule}`,
+            background: aSeuilPerso ? `${ISP.terracotta}12` : 'transparent',
+            color: aSeuilPerso ? ISP.terracotta : ISP.muted,
+            cursor: 'pointer', display: 'grid', placeItems: 'center',
+            fontSize: 13, transition: 'all .15s',
+          }}>
+          🔔
+        </button>
+
+        <button
+          onClick={onDelete}
+          style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 8, border: 'none', background: 'transparent', color: ISP.muted, cursor: 'pointer', display: 'grid', placeItems: 'center', transition: 'all .15s' }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `${ISP.burgundy}15`; (e.currentTarget as HTMLButtonElement).style.color = ISP.burgundy }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = ISP.muted }}>
+          <TrashIcon size={15} />
+        </button>
+      </div>
+
+      {/* Panneau maturité */}
+      {editingMaturite && (
+        <div style={{ padding: '12px 14px', borderTop: `1px dashed ${ISP.rule}`, background: '#EEF1FA' }}>
+          <div style={{ fontSize: 11.5, fontWeight: 800, color: '#5A6E99', marginBottom: 10 }}>
+            🍇 Fenêtre de maturité
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 11, color: ISP.muted, fontWeight: 700 }}>Prêt à partir de</span>
+              <input
+                type="number" min={2020} max={2060}
+                value={debutInput} onChange={e => setDebutInput(e.target.value)}
+                style={{ width: 72, padding: '5px 8px', borderRadius: 7, border: `1.5px solid #5A6E99`, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: ISP.ink, background: '#fff', outline: 'none' }}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 11, color: ISP.muted, fontWeight: 700 }}>jusqu'à</span>
+              <input
+                type="number" min={2020} max={2070}
+                value={finInput} onChange={e => setFinInput(e.target.value)}
+                style={{ width: 72, padding: '5px 8px', borderRadius: 7, border: `1.5px solid #5A6E99`, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: ISP.ink, background: '#fff', outline: 'none' }}
+              />
+            </div>
+            <button
+              onClick={sauvegarderMaturite}
+              style={{ padding: '6px 12px', borderRadius: 8, background: '#5A6E99', color: '#fff', border: 'none', fontFamily: 'inherit', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>
+              Enregistrer
+            </button>
+            <button
+              onClick={() => { onUpdateMaturite(refData.id, null, null, false); setDebutInput(''); setFinInput(''); setEditingMaturite(false) }}
+              style={{ padding: '6px 10px', borderRadius: 8, background: 'transparent', color: ISP.muted, border: `1px solid ${ISP.rule}`, fontFamily: 'inherit', fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}>
+              Supprimer
+            </button>
+          </div>
+          {pasEncoreMature && (
+            <div style={{ marginTop: 10, fontSize: 12, color: '#5A6E99', fontStyle: 'italic', lineHeight: 1.5 }}>
+              Ce vin sera proposé dans les accords avec une mention "pas encore à maturité" — une alternative en cave sera suggérée.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Panneau seuil */}
+      {editingSeuil && (
+        <div style={{ padding: '10px 12px', borderTop: `1px dashed ${ISP.rule}`, background: ISP.card, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const }}>
+          <div style={{ fontSize: 11.5, color: ISP.muted, fontWeight: 700, flex: 1 }}>
+            Seuil d'alerte — seuil global :
+            <span style={{ color: ISP.ink, marginLeft: 4 }}>
+              {seuilEffectif === 0 ? 'désactivé' : `${seuilEffectif} bouteilles`}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="number" min={0} max={99}
+              value={seuilInput} onChange={e => setSeuilInput(e.target.value)}
+              placeholder={`${seuilEffectif}`}
+              style={{ width: 70, padding: '6px 10px', borderRadius: 8, border: `1.5px solid ${ISP.terracotta}`, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: ISP.ink, background: ISP.card, outline: 'none' }}
+            />
+            <button onClick={sauvegarderSeuil} style={{ padding: '6px 12px', borderRadius: 8, background: ISP.terracotta, color: '#fff', border: 'none', fontFamily: 'inherit', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>OK</button>
+            {aSeuilPerso && (
+              <button onClick={() => { onUpdateSeuil(refData.id, null); setSeuilInput(''); setEditingSeuil(false) }}
+                style={{ padding: '6px 10px', borderRadius: 8, background: 'transparent', color: ISP.muted, border: `1px solid ${ISP.rule}`, fontFamily: 'inherit', fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}>
+                Seuil global
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
   return (
     <div style={{
@@ -406,6 +655,14 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
   }
   const mettreAJourSeuil = async (id: string, seuil: number | null) => {
   await supabase.from('stocks').update({ seuil_alerte: seuil }).eq('id', id)
+  await chargerStock()
+}
+  const mettreAJourMaturite = async (id: string, debut: number | null, fin: number | null, verrouillee: boolean) => {
+  await supabase.from('stocks').update({
+    maturite_debut: debut,
+    maturite_fin: fin,
+    maturite_verrouillee: verrouillee,
+  }).eq('id', id)
   await chargerStock()
 }
 
@@ -713,12 +970,13 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 560, overflowY: 'auto', paddingRight: 4, margin: '0 -4px' }}>
               {filtered.map((ref: any) => (
   <RefRow
-    key={ref.id}
-    refData={ref}
-    seuilsGlobaux={seuilsGlobaux}
-    onDelete={() => supprimerReference(ref.id)}
-    onUpdateSeuil={mettreAJourSeuil}
-  />
+  key={ref.id}
+  refData={ref}
+  seuilsGlobaux={seuilsGlobaux}
+  onDelete={() => supprimerReference(ref.id)}
+  onUpdateSeuil={mettreAJourSeuil}
+  onUpdateMaturite={mettreAJourMaturite}
+/>
 ))}
             </div>
           )}
