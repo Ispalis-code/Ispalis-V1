@@ -145,7 +145,7 @@ function RefRow({ refData, seuilsGlobaux, onDelete, onUpdateSeuil, onUpdateMatur
   seuilsGlobaux: Record<string, number>
   onDelete: () => void
   onUpdateSeuil: (id: string, seuil: number | null) => void
-  onUpdateMaturite: (id: string, debut: number | null, fin: number | null, verrouillée: boolean) => void
+  onUpdateMaturite: (id: string, debut: number | null, fin: number | null, verrouillee: boolean) => void
 }) {
   const [editingSeuil, setEditingSeuil] = useState(false)
   const [editingMaturite, setEditingMaturite] = useState(false)
