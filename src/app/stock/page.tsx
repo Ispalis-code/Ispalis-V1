@@ -288,7 +288,7 @@ Les années doivent être des entiers. Si le millésime est inconnu, base-toi su
               fontSize: 10, fontWeight: 800, padding: '2px 8px',
               borderRadius: 999, border: '1px solid #EEA30060',
             }}>
-              ⚠ Stock bas
+              <span suppressHydrationWarning>⚠</span> Stock bas
             </div>
           )}
         </div>
@@ -319,7 +319,7 @@ Les années doivent être des entiers. Si le millésime est inconnu, base-toi su
             cursor: loadingMaturite ? 'wait' : 'pointer',
             display: 'grid', placeItems: 'center', fontSize: 13, transition: 'all .15s',
           }}>
-          {loadingMaturite ? '⏳' : '🍇'}
+          <span suppressHydrationWarning>{loadingMaturite ? '⏳' : '🍇'}</span>
         </button>
 
         {/* Bouton seuil */}
@@ -334,7 +334,7 @@ Les années doivent être des entiers. Si le millésime est inconnu, base-toi su
             cursor: 'pointer', display: 'grid', placeItems: 'center',
             fontSize: 13, transition: 'all .15s',
           }}>
-          🔔
+          <span suppressHydrationWarning>🔔</span>
         </button>
 
         <button
