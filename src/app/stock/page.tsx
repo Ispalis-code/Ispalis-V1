@@ -418,7 +418,6 @@ Les années doivent être des entiers. Si le millésime est inconnu, base-toi su
   )
 }
 
- 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <label style={{ display: 'block' }}>
