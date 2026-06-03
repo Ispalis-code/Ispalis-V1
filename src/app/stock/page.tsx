@@ -235,11 +235,10 @@ Les années doivent être des entiers. Si le millésime est inconnu, base-toi su
 
   return (
     <div style={{
-      borderRadius: 12, background: ISP.paperWarm,
-      border: `1px solid ${pasEncoreMature ? '#5A6E9940' : enAlerte ? `${ISP.ochre}80` : ISP.rule}`,
-      overflow: 'hidden', transition: 'border-color .2s',
-      minHeight: 56,
-    }}>
+  borderRadius: 12, background: ISP.paperWarm,
+  border: `1px solid ${pasEncoreMature ? '#5A6E9940' : enAlerte ? `${ISP.ochre}80` : ISP.rule}`,
+  transition: 'border-color .2s',
+}}>
       {/* Ligne principale */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px' }}>
         <div style={{ flexShrink: 0 }}><BottleI color={pasEncoreMature ? '#5A6E99' : c} size={28} /></div>
