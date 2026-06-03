@@ -26,19 +26,6 @@ Structure exacte pour UN seul plat :
   "accord_sans_alcool": {"boisson": "boisson artisanale precise", "argument": "phrase courte"}
 }`;
 
-const anneeActuelle = new Date().getFullYear()
-
-const stockFormatted = stock.map(s => ({
-  nom: `${s.nom_reference} ${s.millesime || ''}`.trim(),
-  quantite: s.quantite,
-  jours_sans_mouvement: s.derniere_vente
-    ? Math.floor((new Date().getTime() - new Date(s.derniere_vente).getTime()) / (1000 * 60 * 60 * 24))
-    : 30,
-  // Nouveau : info maturité
-  pas_encore_mature: s.maturite_debut && anneeActuelle < s.maturite_debut
-    ? `pas encore à maturité — prêt à partir de ${s.maturite_debut}`
-    : null,
-}))
 
 const buildContraintes = (p: any): string => {
   if (!p) return ''
@@ -62,10 +49,17 @@ export async function POST(request: NextRequest) {
     }
 
     const platsLimites = plats.slice(0, 8);
-    const stockText = stock && stock.length > 0
-      ? stock.map((s: any) => `- ${s.nom} — ${s.quantite} bouteilles (${s.jours_sans_mouvement}j)`).join("\n")
-      : "Aucun stock";
+    const anneeActuelle = new Date().getFullYear()
 
+const stockText = stock && stock.length > 0
+  ? stock.map((s: any) => {
+      const maturite = s.maturite_debut && anneeActuelle < s.maturite_debut
+        ? ` — pas encore à maturité (prêt en ${s.maturite_debut})`
+        : ''
+      return `- ${s.nom} — ${s.quantite} bouteilles (${s.jours_sans_mouvement}j)${maturite}`
+    }).join("\n")
+  : "Aucun stock";
+    
     const contraintes = buildContraintes(parametres)
 
     const accords = [];
