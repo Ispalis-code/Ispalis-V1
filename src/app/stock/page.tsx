@@ -238,6 +238,7 @@ Les années doivent être des entiers. Si le millésime est inconnu, base-toi su
       borderRadius: 12, background: ISP.paperWarm,
       border: `1px solid ${pasEncoreMature ? '#5A6E9940' : enAlerte ? `${ISP.ochre}80` : ISP.rule}`,
       overflow: 'hidden', transition: 'border-color .2s',
+      minHeight: 56,
     }}>
       {/* Ligne principale */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px' }}>
@@ -827,7 +828,7 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
           ) : filtered.length === 0 ? (
             <div style={{ padding: '24px 20px', borderRadius: 12, background: ISP.paperWarm, textAlign: 'center' as const, color: ISP.muted, fontSize: 13.5 }}>Aucune reference ne correspond.</div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 560, overflowY: 'auto', paddingRight: 4, margin: '0 -4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 'calc(100vh - 320px)', overflowY: 'auto', paddingRight: 4, margin: '0 -4px' }}>
               {filtered.map((ref: any) => (
   <RefRow
   key={ref.id}
