@@ -489,7 +489,7 @@ export default function Stock() {
     if (!user) { router.push('/connexion'); return }
     const { data } = await supabase.from('stocks').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
     if (data) setReferences(data)
-    const { data: userData } = await supabase.from('users').select('seuils_alertes').eq('user_id', user.id).single()
+    const { data: userData } = await supabase.from('users').select('seuils_alertes').eq('id', user.id).single()
 if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.seuils_alertes }))
   }
 
