@@ -280,6 +280,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false)
   const [resultats, setResultats] = useState<any>(null)
   const [erreur, setErreur] = useState('')
+  const [typeService, setTypeService] = useState<'verre' | 'bouteille' | 'carte'>('verre')
   const [parametres, setParametres] = useState({
   types: ['vin'] as string[],
   filtres: {} as Record<string, string[]>,
@@ -354,10 +355,38 @@ const getFiltre = (type: string, cat: string) =>
       const response = await fetch('/api/recommandations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({ plats: platsRemplis, stock: stockFormatted, ton: 'professionnel', parametres }),
+       body: JSON.stringify({ plats: platsRemplis, stock: stockFormatted, ton: 'professionnel', parametres, type_service: typeService}),
       })
       const data = await response.json()
-      if (data.success) { setResultats(data.data) } else { setErreur('Erreur lors de la génération') }
+      if (data.success) {
+  setResultats(data.data)
+
+  // Sauvegarder dans Supabase pour l'historique
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: menu } = await supabase.from('menus').insert({
+        user_id: user.id,
+        plats: platsRemplis,
+        date_menu: new Date().toISOString().split('T')[0],
+      }).select().single()
+
+      if (menu) {
+        await supabase.from('recommandations').insert({
+          user_id: user.id,
+          menu_id: menu.id,
+          accords: data.data.accords || [],
+          alertes_stock: data.data.alertes_stock || [],
+          a_valoriser: data.data.a_valoriser || [],
+          type_service: typeService,
+        })
+      }
+    }
+  } catch (e) {
+    console.error('Erreur sauvegarde historique', e)
+  }
+}
+      } else { setErreur('Erreur lors de la génération') }
     } catch { setErreur('Erreur réseau') }
     setLoading(false)
   }
@@ -661,6 +690,27 @@ const getFiltre = (type: string, cat: string) =>
           </div>
         )}
       </div>
+      {/* Sélecteur type de service */}
+<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+  <span style={{ fontSize: 11, fontWeight: 700, color: ISP.muted, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Service</span>
+  {([
+    { val: 'verre', label: '🍷 Au verre' },
+    { val: 'bouteille', label: '🍾 À la bouteille' },
+    { val: 'carte', label: '📋 À la carte' },
+  ] as const).map(({ val, label }) => (
+    <button key={val} type="button" onClick={() => setTypeService(val)}
+      style={{
+        padding: '5px 12px', borderRadius: 999,
+        border: `1.5px solid ${typeService === val ? ISP.burgundy : ISP.rule}`,
+        background: typeService === val ? '#F5E6E8' : 'transparent',
+        color: typeService === val ? ISP.burgundy : ISP.muted,
+        fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+        cursor: 'pointer', transition: 'all .15s',
+      }}>
+      {label}
+    </button>
+  ))}
+</div>
     <Tooltip text="Génère instantanément les meilleurs accords mets-boissons pour chaque plat saisi" position="top">
   <button onClick={genererAccords} disabled={loading} style={{ marginTop: 4, background: loading ? ISP.muted : ISP.burgundy, color: ISP.card, border: 'none', borderRadius: 14, padding: '16px 22px', fontFamily: 'inherit', fontWeight: 800, fontSize: 15.5, cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, boxShadow: '0 8px 22px -10px rgba(94,17,25,.45)', transition: 'all .2s', letterSpacing: '-0.005em', width: '100%' }}>
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
