@@ -30,13 +30,51 @@ Structure exacte pour UN seul plat :
 const buildContraintes = (p: any): string => {
   if (!p) return ''
   const lines: string[] = []
+
   if (p.cave_priorite) lines.push('Priorite absolue aux references presentes en cave — propose-les en accord intermediaire ou accessible si elles correspondent')
-  if (p.types?.length) lines.push(`Types de boisson souhaites : ${p.types.join(', ')} — adapte le champ "vin" en consequence (ex: biere artisanale, spiritueux, etc.)`)
-  if (p.couleurs?.length) lines.push(`Couleurs souhaitees : ${p.couleurs.join(', ')} uniquement`)
-  if (p.styles?.length) lines.push(`Style souhaite : ${p.styles.join(', ')}`)
+
+  if (p.types?.length) {
+    lines.push(`Types de boisson OBLIGATOIRES : ${p.types.join(', ')} — tu ne proposes QUE ces types, aucun autre`)
+  }
+
+  // Lire les filtres par type depuis p.filtres
+  const filtres = p.filtres || {}
+
+  // Vin
+  const couleurs = filtres['vin_couleur'] || []
+  const styles = filtres['vin_style'] || []
+  if (couleurs.length) lines.push(`Couleurs de vin OBLIGATOIRES : ${couleurs.join(', ')} — ne propose AUCUN vin d'une autre couleur`)
+  if (styles.length) lines.push(`Style de vin souhaite : ${styles.join(', ')}`)
+
+  // Bière
+  const biereFamille = filtres['biere_famille'] || []
+  const biereIntens = filtres['biere_intensite'] || []
+  if (biereFamille.length) lines.push(`Famille de biere souhaitee : ${biereFamille.join(', ')}`)
+  if (biereIntens.length) lines.push(`Intensite de biere souhaitee : ${biereIntens.join(', ')}`)
+
+  // Pétillants
+  const petFamille = filtres['petillant_famille'] || []
+  const petDosage = filtres['petillant_dosage'] || []
+  if (petFamille.length) lines.push(`Type de petillant souhaite : ${petFamille.join(', ')}`)
+  if (petDosage.length) lines.push(`Dosage souhaite : ${petDosage.join(', ')}`)
+
+  // Spiritueux
+  const spirFamille = filtres['spiritueux_famille'] || []
+  const spirService = filtres['spiritueux_service'] || []
+  if (spirFamille.length) lines.push(`Famille de spiritueux souhaitee : ${spirFamille.join(', ')}`)
+  if (spirService.length) lines.push(`Mode de service souhaite : ${spirService.join(', ')}`)
+
+  // Sans alcool
+  const saFamille = filtres['sans_alcool_famille'] || []
+  const saIntens = filtres['sans_alcool_intensite'] || []
+  if (saFamille.length) lines.push(`Famille de boisson sans alcool souhaitee : ${saFamille.join(', ')}`)
+  if (saIntens.length) lines.push(`Intensite sans alcool souhaitee : ${saIntens.join(', ')}`)
+
+  // Budget
   if (p.budget && p.budget !== 'Les trois niveaux') lines.push(`Budget bouteille : ${p.budget} — adapte les trois niveaux en consequence`)
+
   if (lines.length === 0) return ''
-  return `\n\nCONTRAINTES DE GENERATION (a respecter imperativement) :\n${lines.map((l: string) => `- ${l}`).join('\n')}`
+  return `\n\nCONTRAINTES DE GENERATION (A RESPECTER IMPERATIVEMENT — ne pas ignorer) :\n${lines.map((l: string) => `- ${l}`).join('\n')}`
 }
 
 export async function POST(request: NextRequest) {
