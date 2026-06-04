@@ -691,6 +691,7 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
           <NavBtn label="Accords" onClick={() => router.push('/dashboard')} />
           <NavBtn label="Carte" onClick={() => router.push('/carte')} />
           <NavBtn label="Cave" badge={references.length || undefined} active />
+          <NavBtn label="Historique" onClick={() => router.push('/historique')} />
           <NavBtn label="Parametres" onClick={() => router.push('/parametres')} />
         </div>
       </nav>
