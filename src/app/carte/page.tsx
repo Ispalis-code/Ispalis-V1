@@ -802,6 +802,7 @@ const getFiltre = (type: string, cat: string) =>
           <NavBtn label="Accords" onClick={() => router.push('/dashboard')} />
           <NavBtn label="Carte" active />
           <NavBtn label="Cave" badge={stock.length || undefined} onClick={() => router.push('/stock')} />
+          <NavBtn label="Historique" onClick={() => router.push('/historique')} />
           <NavBtn label="Paramètres" onClick={() => router.push('/parametres')} />
         </div>
       </nav>
