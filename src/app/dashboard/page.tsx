@@ -339,58 +339,55 @@ const getFiltre = (type: string, cat: string) =>
   }
 
   const genererAccords = async () => {
-    const platsRemplis = plats.filter(p => p.trim() !== '')
-    if (platsRemplis.length === 0) { setErreur('Ajoutez au moins un plat'); return }
-    setLoading(true)
-    setErreur('')
-    setResultats(null)
-    try {
-      const stockFormatted = stock.map(s => ({
-        nom: `${s.nom_reference} ${s.millesime || ''}`.trim(),
-        quantite: s.quantite,
-        jours_sans_mouvement: s.derniere_vente
-          ? Math.floor((new Date().getTime() - new Date(s.derniere_vente).getTime()) / (1000 * 60 * 60 * 24))
-          : 30,
-      }))
-      const response = await fetch('/api/recommandations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({ plats: platsRemplis, stock: stockFormatted, ton: 'professionnel', parametres, type_service: typeService}),
-      })
-      const data = await response.json()
-      if (data.success) {
-  setResultats(data.data)
-
-  // Sauvegarder dans Supabase pour l'historique
+  const platsRemplis = plats.filter(p => p.trim() !== '')
+  if (platsRemplis.length === 0) { setErreur('Ajoutez au moins un plat'); return }
+  setLoading(true)
+  setErreur('')
+  setResultats(null)
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      const { data: menu } = await supabase.from('menus').insert({
-        user_id: user.id,
-        plats: platsRemplis,
-        date_menu: new Date().toISOString().split('T')[0],
-      }).select().single()
-
-      if (menu) {
-        await supabase.from('recommandations').insert({
-          user_id: user.id,
-          menu_id: menu.id,
-          accords: data.data.accords || [],
-          alertes_stock: data.data.alertes_stock || [],
-          a_valoriser: data.data.a_valoriser || [],
-          type_service: typeService,
-        })
+    const stockFormatted = stock.map(s => ({
+      nom: `${s.nom_reference} ${s.millesime || ''}`.trim(),
+      quantite: s.quantite,
+      jours_sans_mouvement: s.derniere_vente
+        ? Math.floor((new Date().getTime() - new Date(s.derniere_vente).getTime()) / (1000 * 60 * 60 * 24))
+        : 30,
+    }))
+    const response = await fetch('/api/recommandations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plats: platsRemplis, stock: stockFormatted, ton: 'professionnel', parametres, type_service: typeService }),
+    })
+    const data = await response.json()
+    if (data.success) {
+      setResultats(data.data)
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: menu } = await supabase.from('menus').insert({
+            user_id: user.id,
+            plats: platsRemplis,
+            date_menu: new Date().toISOString().split('T')[0],
+          }).select().single()
+          if (menu) {
+            await supabase.from('recommandations').insert({
+              user_id: user.id,
+              menu_id: menu.id,
+              accords: data.data.accords || [],
+              alertes_stock: data.data.alertes_stock || [],
+              a_valoriser: data.data.a_valoriser || [],
+              type_service: typeService,
+            })
+          }
+        }
+      } catch (e) {
+        console.error('Erreur sauvegarde historique', e)
       }
+    } else {
+      setErreur('Erreur lors de la génération')
     }
-  } catch (e) {
-    console.error('Erreur sauvegarde historique', e)
-  }
+  } catch { setErreur('Erreur réseau') }
+  setLoading(false)
 }
-      } else { setErreur('Erreur lors de la génération') }
-    } catch { setErreur('Erreur réseau') }
-    setLoading(false)
-  }
-
   const filledCount = plats.filter(p => p.trim()).length
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long' })
   const todayCap = today.charAt(0).toUpperCase() + today.slice(1)
