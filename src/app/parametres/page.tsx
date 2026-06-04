@@ -142,6 +142,7 @@ const [seuils, setSeuils] = useState<Record<string, number>>(SEUILS_DEFAUT)
           <NavBtn label="Accords" onClick={() => router.push('/dashboard')} />
           <NavBtn label="Carte" onClick={() => router.push('/carte')} />
           <NavBtn label="Cave" onClick={() => router.push('/stock')} />
+          <NavBtn label="Historique" onClick={() => router.push('/historique')} />
           <NavBtn label="Paramètres" active />
         </div>
       </nav>
