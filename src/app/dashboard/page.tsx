@@ -851,8 +851,7 @@ const getFiltre = (type: string, cat: string) =>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: 32, padding: '24px 44px 64px', maxWidth: 1280, margin: '0 auto' }}>
             {formSection}
             <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ borderRadius: 18, padding: '24px 24px', background: ISP.ochre, color: ISP.burgundy, position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', bottom: -22, right: -10, opacity: 0.18 }}>
+        <div style={{ borderRadius: 18, padding: '24px 24px', background: ISP.ochre, color: ISP.burgundy, position: 'relative' }}>                <div style={{ position: 'absolute', bottom: -22, right: -10, opacity: 0.18 }}>
                   <BottleI color={ISP.burgundy} size={120} />
                 </div>
                 <div style={{ position: 'relative' }}>
