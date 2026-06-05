@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import Tooltip from '@/components/Tooltip'
 
 const ISP = {
   burgundy: '#5E1119',
@@ -687,13 +688,22 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
         <div style={{ cursor: 'pointer' }} onClick={() => router.push('/dashboard')}>
           <IspalisLogo size={24} />
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <NavBtn label="Accords" onClick={() => router.push('/dashboard')} />
-          <NavBtn label="Carte" onClick={() => router.push('/carte')} />
-          <NavBtn label="Cave" badge={references.length || undefined} active />
-          <NavBtn label="Historique" onClick={() => router.push('/historique')} />
-          <NavBtn label="Parametres" onClick={() => router.push('/parametres')} />
-        </div>
+       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+  <NavBtn label="Accords" onClick={() => router.push('/dashboard')} />
+  <NavBtn label="Carte" active />
+  <Tooltip text="Vue salle en temps réel — consultez les accords pendant le service" position="bottom">
+    <NavBtn label="📱 Service" onClick={() => router.push('/service')} />
+  </Tooltip>
+  <Tooltip text="Gérez votre cave et importez votre stock de vins et boissons" position="bottom">
+    <NavBtn label="Cave" badge={stock.length || undefined} onClick={() => router.push('/stock')} />
+  </Tooltip>
+  <Tooltip text="Visitez l'historique de toutes vos générations précédentes" position="bottom">
+    <NavBtn label="Historique" onClick={() => router.push('/historique')} />
+  </Tooltip>
+  <Tooltip text="Personnalisez le ton et le style de vos accords générés" position="bottom">
+    <NavBtn label="Paramètres" onClick={() => router.push('/parametres')} />
+  </Tooltip>
+</div>
       </nav>
 
       <header style={{ padding: '32px 44px 8px', maxWidth: 1280, margin: '0 auto' }}>
