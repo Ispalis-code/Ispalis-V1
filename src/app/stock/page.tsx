@@ -689,8 +689,12 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
           <IspalisLogo size={24} />
         </div>
        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+      <Tooltip text="Retour Dashboard" position="bottom">
   <NavBtn label="Accords" onClick={() => router.push('/dashboard')} />
-  <NavBtn label="Carte"  onClick={() => router.push('/carte')} />
+     </Tooltip> 
+  <Tooltip text="Importez votre carte et générez des accords pour chaque plat" position="bottom">
+         <NavBtn label="Carte"  onClick={() => router.push('/carte')} />
+    </Tooltip>
   <Tooltip text="Vue salle en temps réel — consultez les accords pendant le service" position="bottom">
     <NavBtn label="📱 Service" onClick={() => router.push('/service')} />
   </Tooltip>
