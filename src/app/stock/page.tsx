@@ -695,7 +695,7 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
     <NavBtn label="📱 Service" onClick={() => router.push('/service')} />
   </Tooltip>
   <Tooltip text="Gérez votre cave et importez votre stock de vins et boissons" position="bottom">
-    <NavBtn label="Cave" onClick={() active />
+    <NavBtn label="Cave" badge={references.length || undefined} active />
   </Tooltip>
   <Tooltip text="Visitez l'historique de toutes vos générations précédentes" position="bottom">
     <NavBtn label="Historique" onClick={() => router.push('/historique')} />
