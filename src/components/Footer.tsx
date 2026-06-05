@@ -16,7 +16,7 @@ export default function Footer() {
         <div>
           <div style={{ fontWeight: 800, fontSize: 18, color: ISP.ochre, letterSpacing: '-0.01em', marginBottom: 8 }}>·ispalis·</div>
           <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, maxWidth: 280 }}>
-            Le sommelier IA des restaurateurs. Accords mets-boissons générés en temps réel, adaptés à votre cave et à votre cuisine.
+            "L'ingénerie au service de votre table". Accords mets-boissons générés en temps réel, adaptés à votre cave et à votre cuisine.
           </div>
           <div style={{ marginTop: 14, fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
             © {new Date().getFullYear()} Ispalis — Tous droits réservés
