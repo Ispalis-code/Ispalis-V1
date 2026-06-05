@@ -863,9 +863,11 @@ const getFiltre = (type: string, cat: string) =>
                   <div style={{ fontSize: 13, marginTop: 10, maxWidth: '24ch', lineHeight: 1.45 }}>
                     {stock.length === 0 ? 'Ajoutez vos références pour qu\u2019Ispalis les propose en priorité.' : 'Piochées en priorité dans vos accords du soir.'}
                   </div>
+                   <Tooltip text="Cliquez visualiser votre cave, importer votre cave à la main ou via un fichier, consultez et modifier vos références, " position="bottom">
                   <button onClick={() => router.push('/stock')} style={{ marginTop: 16, background: ISP.burgundy, color: ISP.ochre, border: 'none', borderRadius: 10, padding: '8px 14px', fontFamily: 'inherit', fontWeight: 800, fontSize: 12.5, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
                     {stock.length === 0 ? 'Ajouter des références' : 'Gérer ma cave'} <ArrowRightIcon size={12} />
                   </button>
+                      </Tooltip>
                 </div>
               </div>
               <div style={{ background: ISP.card, borderRadius: 18, padding: '22px 24px', boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 8px 24px -16px rgba(60,40,20,.15)' }}>
