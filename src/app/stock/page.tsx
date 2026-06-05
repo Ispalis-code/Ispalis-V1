@@ -690,12 +690,12 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
         </div>
        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
   <NavBtn label="Accords" onClick={() => router.push('/dashboard')} />
-  <NavBtn label="Carte" active />
+  <NavBtn label="Carte"  onClick={() => router.push('/carte')} />
   <Tooltip text="Vue salle en temps réel — consultez les accords pendant le service" position="bottom">
     <NavBtn label="📱 Service" onClick={() => router.push('/service')} />
   </Tooltip>
   <Tooltip text="Gérez votre cave et importez votre stock de vins et boissons" position="bottom">
-    <NavBtn label="Cave" onClick={() => router.push('/stock')} />
+    <NavBtn label="Cave" onClick={() active />
   </Tooltip>
   <Tooltip text="Visitez l'historique de toutes vos générations précédentes" position="bottom">
     <NavBtn label="Historique" onClick={() => router.push('/historique')} />
