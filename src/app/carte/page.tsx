@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import Tooltip from '@/components/Tooltip'
 
 const ISP = {
   burgundy: '#5E1119',
