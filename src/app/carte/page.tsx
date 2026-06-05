@@ -800,7 +800,9 @@ const getFiltre = (type: string, cat: string) =>
           <IspalisLogo size={24} />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Tooltip text="Retour Dashboard" position="bottom">
           <NavBtn label="Accords" onClick={() => router.push('/dashboard')} />
+            </Tooltip>
           <NavBtn label="Carte" active />
           <Tooltip text="Vue salle en temps réel — consultez les accords pendant le service" position="bottom">
             <NavBtn label="📱 Service" onClick={() => router.push('/service')} />
