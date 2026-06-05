@@ -798,24 +798,22 @@ const getFiltre = (type: string, cat: string) =>
         <div style={{ cursor: 'pointer' }} onClick={() => router.push('/dashboard')}>
           <IspalisLogo size={24} />
         </div>
-         <Tooltip text="Importez votre carte et générez des accords pour chaque plat" position="bottom">
-    <NavBtn label="Carte" onClick={() => router.push('/carte')} />
-  </Tooltip>
-  <Tooltip text="Vue salle en temps réel — consultez les accords pendant le service" position="bottom">
-    <NavBtn label="📱 Service" onClick={() => router.push('/service')} />
-  </Tooltip>
-  <Tooltip text="Gérez votre cave et importez votre stock de vins et boissons" position="bottom">
-    <NavBtn label="Cave" badge={stock.length || undefined} onClick={() => router.push('/stock')} />
-  </Tooltip>
-  <Tooltip text="Visitez l'histrorique de toutes vos générations précédentes" position="bottom">
-    <NavBtn label="Historique" onClick={() => router.push('/historique')} />
-    </Tooltip>
-  <Tooltip text="Personnalisez le ton et le style de vos accords générés" position="bottom">
-    <NavBtn label="Paramètres" onClick={() => router.push('/parametres')} />
-  </Tooltip>
-  <div style={{ width: 1, height: 22, background: ISP.rule, margin: '0 8px' }} />
-  <NavBtn label="Déconnexion" muted onClick={handleDeconnexion} />
-</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <NavBtn label="Accords" onClick={() => router.push('/dashboard')} />
+          <NavBtn label="Carte" active />
+          <Tooltip text="Vue salle en temps réel — consultez les accords pendant le service" position="bottom">
+            <NavBtn label="📱 Service" onClick={() => router.push('/service')} />
+          </Tooltip>
+          <Tooltip text="Gérez votre cave et importez votre stock de vins et boissons" position="bottom">
+            <NavBtn label="Cave" badge={stock.length || undefined} onClick={() => router.push('/stock')} />
+          </Tooltip>
+          <Tooltip text="Visitez l'historique de toutes vos générations précédentes" position="bottom">
+            <NavBtn label="Historique" onClick={() => router.push('/historique')} />
+          </Tooltip>
+          <Tooltip text="Personnalisez le ton et le style de vos accords générés" position="bottom">
+            <NavBtn label="Paramètres" onClick={() => router.push('/parametres')} />
+          </Tooltip>
+        </div>
       </nav>
 
       {hasResults ? (
