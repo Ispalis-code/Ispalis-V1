@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import PrintAccords from '@/components/PrintAccords'
 
 const ISP = {
   burgundy: '#5E1119',
@@ -125,6 +126,7 @@ const SessionCard = ({ session, search }: { session: any; search: string }) => {
   const dateStr = date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
   const heureStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
   const accords: any[] = session.accords || []
+  
 
   const accordsFiltres = search.trim()
     ? accords.filter(a => a.plat?.toLowerCase().includes(search.toLowerCase()))
@@ -328,6 +330,9 @@ export default function Historique() {
                     <SessionCard key={session.id} session={session} search={search} />
                   ))}
                 </div>
+                <PrintAccords
+  accords={session.accords || []}
+/>
               </div>
             ))}
           </div>
