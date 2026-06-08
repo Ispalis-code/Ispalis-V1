@@ -705,7 +705,6 @@ body: JSON.stringify({
       <PrintAccords
   accords={resultats.accords || []}
   accordBouteille={accordBouteille}
-  nomRestaurant={/* récupérer depuis Supabase ou laisser vide */}
 />
 {/* Accord bouteille menu */}
 {accordBouteille && (
