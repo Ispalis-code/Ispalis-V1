@@ -234,8 +234,7 @@ Les emojis dans les boutons peuvent causer des erreurs d'hydratation. Toujours l
 ## Accès admin
 
 - **URL :** https://ispalis-v1.vercel.app/admin
-- **Mot de passe :** `ispalis2026`
-- **⚠️ Changer ce mot de passe dès la passation effectuée**
+- **Mot de passe :** `mdp écrit sur la page notion`
 
 Le dashboard admin affiche : restaurants inscrits, appels API, coûts Anthropic, et un simulateur de rentabilité par restaurant.
 
