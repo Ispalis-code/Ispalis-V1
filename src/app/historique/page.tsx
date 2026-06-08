@@ -168,12 +168,15 @@ const SessionCard = ({ session, search }: { session: any; search: string }) => {
 
       {/* Accords */}
       {(open || search.trim()) && accordsFiltres.length > 0 && (
-        <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column' as const, gap: 8, borderTop: `1px dashed ${ISP.rule}`, paddingTop: 16 }}>
-          {accordsFiltres.map((accord: any, i: number) => (
-            <AccordPlat key={i} accord={accord} />
-          ))}
-        </div>
-      )}
+  <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column' as const, gap: 8, borderTop: `1px dashed ${ISP.rule}`, paddingTop: 16 }}>
+    {accordsFiltres.map((accord: any, i: number) => (
+      <AccordPlat key={i} accord={accord} />
+    ))}
+    <div style={{ marginTop: 8 }}>
+      <PrintAccords accords={accordsFiltres} />
+    </div>
+  </div>
+)}
     </div>
   )
 }
@@ -330,9 +333,7 @@ export default function Historique() {
                     <SessionCard key={session.id} session={session} search={search} />
                   ))}
                 </div>
-                <PrintAccords
-  accords={session.accords || []}
-/>
+                
               </div>
             ))}
           </div>
