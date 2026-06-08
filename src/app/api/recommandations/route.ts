@@ -80,13 +80,61 @@ const buildContraintes = (p: any): string => {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { plats, stock, ton, parametres } = body;
+    const { plats, stock, ton, parametres, type_service, mode} = body;
 
     if (!plats || plats.length === 0) {
       return NextResponse.json({ error: "Aucun plat fourni" }, { status: 400 });
     }
 
     const platsLimites = plats.slice(0, 8);
+
+// ─── Mode bouteille menu : 1 seul appel pour tout le menu
+if (mode === 'bouteille_menu') {
+  const stockText = stock && stock.length > 0
+    ? stock.map((s: any) => {
+        const anneeActuelle = new Date().getFullYear()
+        const maturite = s.maturite_debut && anneeActuelle < s.maturite_debut
+          ? ` — pas encore à maturité (prêt en ${s.maturite_debut})`
+          : ''
+        return `- ${s.nom} — ${s.quantite} bouteilles (${s.jours_sans_mouvement}j)${maturite}`
+      }).join("\n")
+    : "Aucun stock";
+
+  const message = await client.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 600,
+    system: `Tu es le sommelier IA d'Ispalis. Reponds UNIQUEMENT en JSON valide sans texte avant ou apres.
+Tu dois recommander UN vin en bouteille qui accompagne au mieux l'ensemble du menu.
+Structure exacte :
+{
+  "accord_principal": {
+    "vin": "appellation precise",
+    "prix_bouteille": "35-55EUR",
+    "argument": "phrase expliquant pourquoi ce vin fonctionne sur l'ensemble du menu",
+    "plats_couverts": ["plat1", "plat2"]
+  },
+  "accord_alternatif": {
+    "vin": "appellation precise",
+    "prix_bouteille": "25-40EUR",
+    "argument": "phrase courte",
+    "plats_couverts": ["plat1", "plat2"]
+  }
+}`,
+    messages: [{
+      role: "user",
+      content: `STOCK:\n${stockText}\n\nMENU COMPLET:\n${platsLimites.map((p, i) => `${i+1}. ${p}`).join('\n')}\n\nTrouve le meilleur vin en bouteille pour accompagner l'ensemble de ce menu.`
+    }],
+  });
+
+  const raw = message.content.map((b: any) => b.type === "text" ? b.text : "").join("");
+  const clean = raw.replace(/```json|```/g, "").trim();
+  const accord_bouteille = JSON.parse(clean);
+
+  return NextResponse.json({
+    success: true,
+    data: { accord_bouteille, mode: 'bouteille_menu' },
+  });
+}
     const anneeActuelle = new Date().getFullYear()
 
 const stockText = stock && stock.length > 0
