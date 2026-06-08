@@ -755,13 +755,9 @@ const getFiltre = (type: string, cat: string) =>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 800, color: ISP.terracotta, marginBottom: 20 }}>
             <span style={{ width: 24, height: 1.5, background: ISP.terracotta }} />
             <span>Acte II · Vos accords</span>
-            <PrintAccords
-  accords={accords}
-  nomRestaurant={/* idem */}
-/>
             <span style={{ flex: 1, height: 1.5, background: `${ISP.terracotta}33` }} />
           </div>
-
+          <PrintAccords accords={accords}/>
        {alertes.length > 0 && <AlertesStock alertes={alertes} />}
 
           {accords.map((accord: any, i: number) => (
