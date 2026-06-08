@@ -281,6 +281,14 @@ export default function Dashboard() {
   const [resultats, setResultats] = useState<any>(null)
   const [erreur, setErreur] = useState('')
   const [typeService, setTypeService] = useState<'verre' | 'bouteille' | 'carte'>('verre')
+  const [modeSansAlcool, setModeSansAlcool] = useState(false)
+const [accordBouteille, setAccordBouteille] = useState<any>(null)
+const [loadingBouteille, setLoadingBouteille] = useState(false)
+const [menusSauvegardes, setMenusSauvegardes] = useState<any[]>([])
+const [panneauMenus, setPanneauMenus] = useState(false)
+const [nomMenuInput, setNomMenuInput] = useState('')
+const [savingMenu, setSavingMenu] = useState(false)
+const [menuSavedMsg, setMenuSavedMsg] = useState('')
   const [parametres, setParametres] = useState({
   types: ['vin'] as string[],
   filtres: {} as Record<string, string[]>,
@@ -318,7 +326,7 @@ const getFiltre = (type: string, cat: string) =>
   const router = useRouter()
   const supabase = createClient()
 
-  useEffect(() => { chargerStock() }, [])
+useEffect(() => { chargerStock(); chargerMenusSauvegardes() }, [])
 
   const chargerStock = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -326,6 +334,82 @@ const getFiltre = (type: string, cat: string) =>
     const { data } = await supabase.from('stocks').select('*').eq('user_id', user.id)
     if (data) setStock(data)
   }
+  const chargerMenusSauvegardes = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data } = await supabase
+    .from('menus')
+    .select('*')
+    .eq('user_id', user.id)
+    .not('nom_menu', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(20)
+  if (data) setMenusSauvegardes(data)
+}
+
+const sauvegarderMenu = async () => {
+  const platsRemplis = plats.filter(p => p.trim())
+  if (platsRemplis.length === 0 || !nomMenuInput.trim()) return
+  setSavingMenu(true)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  await supabase.from('menus').insert({
+    user_id: user.id,
+    plats: platsRemplis,
+    nom_menu: nomMenuInput.trim(),
+    date_menu: new Date().toISOString().split('T')[0],
+  })
+  setNomMenuInput('')
+  setMenuSavedMsg('Menu sauvegardé ✓')
+  setTimeout(() => setMenuSavedMsg(''), 3000)
+  await chargerMenusSauvegardes()
+  setSavingMenu(false)
+}
+
+const chargerMenu = (menu: any) => {
+  const filledCount = plats.filter(p => p.trim()).length
+  if (filledCount > 0 && !confirm('Remplacer les plats actuels par ce menu ?')) return
+  const newPlats = [...menu.plats, '', '', '', ''].slice(0, 5)
+  setPlats(newPlats)
+  setPanneauMenus(false)
+  setResultats(null)
+  setAccordBouteille(null)
+}
+
+const supprimerMenuSauvegarde = async (id: string, e: React.MouseEvent) => {
+  e.stopPropagation()
+  await supabase.from('menus').delete().eq('id', id)
+  await chargerMenusSauvegardes()
+}
+
+const genererAccordsBouteille = async () => {
+  const platsRemplis = plats.filter(p => p.trim())
+  if (platsRemplis.length === 0) return
+  setLoadingBouteille(true)
+  setAccordBouteille(null)
+  try {
+    const stockFormatted = stock.map(s => ({
+      nom: `${s.nom_reference} ${s.millesime || ''}`.trim(),
+      quantite: s.quantite,
+      jours_sans_mouvement: s.derniere_vente
+        ? Math.floor((new Date().getTime() - new Date(s.derniere_vente).getTime()) / (1000 * 60 * 60 * 24))
+        : 30,
+    }))
+    const response = await fetch('/api/recommandations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        plats: platsRemplis,
+        stock: stockFormatted,
+        ton: 'professionnel',
+        mode: 'bouteille_menu',
+      }),
+    })
+    const data = await response.json()
+    if (data.success) setAccordBouteille(data.data.accord_bouteille)
+  } catch { console.error('Erreur accord bouteille') }
+  setLoadingBouteille(false)
+}
 
   const handleDeconnexion = async () => {
     await supabase.auth.signOut()
@@ -355,7 +439,16 @@ const getFiltre = (type: string, cat: string) =>
     const response = await fetch('/api/recommandations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plats: platsRemplis, stock: stockFormatted, ton: 'professionnel', parametres, type_service: typeService }),
+      // Dans genererAccords, dans le body de la requête, ajoute :
+body: JSON.stringify({
+  plats: platsRemplis,
+  stock: stockFormatted,
+  ton: 'professionnel',
+  parametres: modeSansAlcool
+    ? { ...parametres, types: ['sans_alcool'], filtres: {} }
+    : parametres,
+  type_service: typeService,
+}),
     })
     const data = await response.json()
     if (data.success) {
@@ -394,335 +487,211 @@ const getFiltre = (type: string, cat: string) =>
 
   // ─── JSX formulaire (variable, pas une fonction — évite le bug de focus)
   const formSection = (
-    <section style={{ background: ISP.card, borderRadius: 18, padding: '28px 32px', boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', paddingBottom: 14, borderBottom: `2px solid ${ISP.ink}` }}>
-        <div>
-          <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: ISP.terracotta, fontWeight: 800 }}>Acte I</div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, margin: '4px 0 0', letterSpacing: '-0.01em' }}>Vos plats</h2>
-        </div>
+  <section style={{ background: ISP.card, borderRadius: 18, padding: '28px 32px', boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+    {/* Header */}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 14, borderBottom: `2px solid ${ISP.ink}` }}>
+      <div>
+        <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: ISP.terracotta, fontWeight: 800 }}>Acte I</div>
+        <h2 style={{ fontSize: 22, fontWeight: 800, margin: '4px 0 0', letterSpacing: '-0.01em' }}>Vos plats</h2>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 11px', borderRadius: 999, background: filledCount > 0 ? ISP.sagePale : ISP.paper, color: filledCount > 0 ? ISP.sage : ISP.muted, fontSize: 11.5, fontWeight: 800 }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: filledCount > 0 ? ISP.sage : ISP.muted }} />
           {filledCount}/5 complétés
         </div>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {plats.map((plat, i) => (
-          <BottleRow key={i} index={i + 1} value={plat} onChange={(v) => updatePlat(i, v)} />
-        ))}
-      </div>
-      {erreur && (
-        <div style={{ padding: '10px 14px', borderRadius: 10, background: '#FBE9EB', color: ISP.burgundy, fontSize: 13, fontWeight: 700, border: `1px solid ${ISP.burgundy}33` }}>
-          {erreur}
-        </div>
-      )}
-
-      {/* Paramètres avancés dépliables */}
-      <div style={{ borderRadius: 12, border: `1.5px solid ${parametresOuverts ? ISP.terracotta : ISP.rule}`, overflow: 'hidden', transition: 'border-color .2s' }}>
+        {/* Bouton charger menu */}
         <button
-          onClick={() => setParametresOuverts(o => !o)}
+          onClick={() => { setPanneauMenus(o => !o); if (!panneauMenus) chargerMenusSauvegardes() }}
           style={{
-            width: '100%', padding: '11px 16px',
-            background: parametresOuverts ? `${ISP.terracotta}08` : 'transparent',
-            border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '5px 12px', borderRadius: 999,
+            background: panneauMenus ? ISP.burgundy : ISP.paperWarm,
+            color: panneauMenus ? ISP.card : ISP.ink,
+            border: 'none', cursor: 'pointer',
+            fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+            transition: 'all .15s',
           }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 12.5, fontWeight: 800, color: parametresOuverts ? ISP.terracotta : ISP.muted }}>
-              Paramètres de génération
+          📋 Mes menus
+          {menusSauvegardes.length > 0 && (
+            <span style={{ fontSize: 10, fontWeight: 800, padding: '1px 6px', borderRadius: 999, background: panneauMenus ? `${ISP.ochre}40` : `${ISP.sage}33`, color: panneauMenus ? ISP.ochre : ISP.ink }}>
+              {menusSauvegardes.length}
             </span>
-            {/* Résumé des filtres actifs */}
-            {parametres.types.length > 0 && (
-              <div style={{ display: 'flex', gap: 4 }}>
-                {parametres.types.map(t => {
-                  const icons: Record<string, string> = { vin: '🍷', biere: '🍺', petillant: '🥂', spiritueux: '🥃', sans_alcool: '🫧' }
-                  return (
-                    <span key={t} style={{
-                      fontSize: 10, padding: '1px 7px', borderRadius: 999,
-                      background: ISP.sagePale, color: ISP.sage, fontWeight: 700,
-                    }}>
-                      {icons[t]}
-                    </span>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-          <span style={{
-            fontSize: 16, color: parametresOuverts ? ISP.terracotta : ISP.muted,
-            transform: parametresOuverts ? 'rotate(180deg)' : 'none',
-            transition: 'transform .2s', display: 'block',
-          }}>▾</span>
+          )}
         </button>
+      </div>
+    </div>
 
-        {parametresOuverts && (
-          <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column' as const, gap: 14, borderTop: `1px solid ${ISP.rule}` }}>
-
-            {/* Types */}
-            <div style={{ paddingTop: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: ISP.muted, marginBottom: 6 }}>TYPE DE BOISSON</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-                {[
-                  { val: 'vin', label: '🍷 Vins' },
-                  { val: 'biere', label: '🍺 Bières' },
-                  { val: 'petillant', label: '🥂 Pétillants' },
-                  { val: 'spiritueux', label: '🥃 Spiritueux' },
-                  { val: 'sans_alcool', label: '🫧 Sans alcool' },
-                ].map(({ val, label }) => (
-                  <button key={val} onClick={() => toggleType(val)}
-                    style={{
-                      padding: '6px 13px', borderRadius: 999,
-                      border: `1.5px solid ${parametres.types.includes(val) ? ISP.burgundy : ISP.rule}`,
-                      background: parametres.types.includes(val) ? '#F5E6E8' : ISP.card,
-                      color: parametres.types.includes(val) ? ISP.burgundy : ISP.muted,
-                      fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
-                      transition: 'all .15s',
-                    }}>
-                    {label}
-                  </button>
-                ))}
+    {/* Panneau menus sauvegardés */}
+    {panneauMenus && (
+      <div style={{ borderRadius: 12, background: ISP.paperWarm, padding: '14px 16px', display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: ISP.muted, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 4 }}>
+          Menus sauvegardés
+        </div>
+        {menusSauvegardes.length === 0 ? (
+          <div style={{ fontSize: 13, color: ISP.muted, fontStyle: 'italic' }}>Aucun menu sauvegardé pour l'instant.</div>
+        ) : (
+          menusSauvegardes.map(menu => (
+            <div
+              key={menu.id}
+              onClick={() => chargerMenu(menu)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 14px', borderRadius: 10,
+                background: ISP.card, cursor: 'pointer',
+                border: `1px solid ${ISP.rule}`,
+                transition: 'all .15s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget as HTMLDivElement).style.borderColor = ISP.burgundy}
+              onMouseLeave={(e) => (e.currentTarget as HTMLDivElement).style.borderColor = ISP.rule}
+            >
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 800, color: ISP.ink }}>{menu.nom_menu}</div>
+                <div style={{ fontSize: 11.5, color: ISP.muted, marginTop: 2 }}>
+                  {menu.plats?.length} plat{menu.plats?.length > 1 ? 's' : ''} · {new Date(menu.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                </div>
+                <div style={{ fontSize: 11, color: ISP.muted, marginTop: 2, fontStyle: 'italic' }}>
+                  {menu.plats?.slice(0, 2).join(', ')}{menu.plats?.length > 2 ? '…' : ''}
+                </div>
               </div>
-            </div>
-
-            {/* Onglets par type */}
-            {parametres.types.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
-                {parametres.types.length > 1 && (
-                  <div style={{ display: 'flex', gap: 4, borderBottom: `1.5px solid ${ISP.rule}` }}>
-                    {parametres.types.map(type => {
-                      const labels: Record<string, string> = {
-                        vin: '🍷 Vins', biere: '🍺 Bières', petillant: '🥂 Pétillants',
-                        spiritueux: '🥃 Spiritueux', sans_alcool: '🫧 Sans alcool',
-                      }
-                      return (
-                        <button key={type} onClick={() => setOngletActif(type)}
-                          style={{
-                            padding: '6px 14px', border: 'none', cursor: 'pointer',
-                            fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
-                            background: 'transparent',
-                            color: ongletActif === type ? ISP.burgundy : ISP.muted,
-                            borderBottom: `2px solid ${ongletActif === type ? ISP.burgundy : 'transparent'}`,
-                            marginBottom: -1.5, transition: 'all .15s',
-                          }}>
-                          {labels[type]}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-
-                {/* ─── VIN */}
-                {ongletActif === 'vin' && parametres.types.includes('vin') && (
-                  <>
-                    <FiltreGroupe label="COULEUR"
-                      options={[
-                        { val: 'rouge', label: 'Rouge' }, { val: 'blanc', label: 'Blanc' },
-                        { val: 'rosé', label: 'Rosé' }, { val: 'orange', label: 'Orange' },
-                      ]}
-                      selected={getFiltre('vin', 'couleur')}
-                      onToggle={(v) => toggleFiltre('vin', 'couleur', v)}
-                      accentColor={ISP.burgundy} bgColor='#F5E6E8'
-                    />
-                    <FiltreGroupe label="STYLE"
-                      options={[
-                        { val: 'léger et frais', label: 'Léger & frais' },
-                        { val: 'charnu et puissant', label: 'Charnu' },
-                        { val: 'accords régionaux', label: 'Régional' },
-                        { val: 'vins naturels', label: 'Naturel / bio' },
-                        { val: 'classique', label: 'Classique' },
-                        { val: 'vins de garde', label: 'De garde' },
-                      ]}
-                      selected={getFiltre('vin', 'style')}
-                      onToggle={(v) => toggleFiltre('vin', 'style', v)}
-                      accentColor={ISP.terracotta} bgColor='#F9EDE7'
-                    />
-                  </>
-                )}
-
-                {/* ─── BIÈRE */}
-                {ongletActif === 'biere' && parametres.types.includes('biere') && (
-                  <>
-                    <FiltreGroupe label="FAMILLE"
-                      options={[
-                        { val: 'lager', label: 'Lager' }, { val: 'ale', label: 'Ale' },
-                        { val: 'ipa', label: 'IPA' }, { val: 'stout', label: 'Stout / Porter' },
-                        { val: 'blanche', label: 'Blanche' }, { val: 'ambrée', label: 'Ambrée' },
-                        { val: 'sour', label: 'Sour / Acide' }, { val: 'craft', label: 'Craft locale' },
-                      ]}
-                      selected={getFiltre('biere', 'famille')}
-                      onToggle={(v) => toggleFiltre('biere', 'famille', v)}
-                      accentColor='#854F0B' bgColor='#FDF3E3'
-                    />
-                    <FiltreGroupe label="INTENSITÉ"
-                      options={[
-                        { val: 'légère', label: 'Légère (- de 5°)' },
-                        { val: 'moyenne', label: 'Moyenne (5-7°)' },
-                        { val: 'forte', label: 'Forte (+ de 7°)' },
-                      ]}
-                      selected={getFiltre('biere', 'intensite')}
-                      onToggle={(v) => toggleFiltre('biere', 'intensite', v)}
-                      accentColor='#854F0B' bgColor='#FDF3E3'
-                    />
-                  </>
-                )}
-
-                {/* ─── PÉTILLANTS */}
-                {ongletActif === 'petillant' && parametres.types.includes('petillant') && (
-                  <>
-                    <FiltreGroupe label="FAMILLE"
-                      options={[
-                        { val: 'champagne', label: 'Champagne' },
-                        { val: 'crémant', label: 'Crémant' },
-                        { val: 'prosecco', label: 'Prosecco' },
-                        { val: 'cava', label: 'Cava' },
-                        { val: 'pétillant naturel', label: 'Pét-nat' },
-                        { val: 'eau pétillante premium', label: 'Eau gazeuse premium' },
-                      ]}
-                      selected={getFiltre('petillant', 'famille')}
-                      onToggle={(v) => toggleFiltre('petillant', 'famille', v)}
-                      accentColor='#5A6E99' bgColor='#EEF1FA'
-                    />
-                    <FiltreGroupe label="DOSAGE"
-                      options={[
-                        { val: 'brut nature', label: 'Brut nature' },
-                        { val: 'extra brut', label: 'Extra brut' },
-                        { val: 'brut', label: 'Brut' },
-                        { val: 'demi-sec', label: 'Demi-sec' },
-                      ]}
-                      selected={getFiltre('petillant', 'dosage')}
-                      onToggle={(v) => toggleFiltre('petillant', 'dosage', v)}
-                      accentColor='#5A6E99' bgColor='#EEF1FA'
-                    />
-                  </>
-                )}
-
-                {/* ─── SPIRITUEUX */}
-                {ongletActif === 'spiritueux' && parametres.types.includes('spiritueux') && (
-                  <>
-                    <FiltreGroupe label="FAMILLE"
-                      options={[
-                        { val: 'whisky', label: 'Whisky / Bourbon' },
-                        { val: 'cognac', label: 'Cognac / Armagnac' },
-                        { val: 'rhum', label: 'Rhum' }, { val: 'gin', label: 'Gin' },
-                        { val: 'vodka', label: 'Vodka' }, { val: 'calvados', label: 'Calvados' },
-                        { val: 'mezcal', label: 'Mezcal / Tequila' }, { val: 'liqueur', label: 'Liqueur' },
-                      ]}
-                      selected={getFiltre('spiritueux', 'famille')}
-                      onToggle={(v) => toggleFiltre('spiritueux', 'famille', v)}
-                      accentColor='#7A4F1E' bgColor='#F7EFE4'
-                    />
-                    <FiltreGroupe label="SERVICE"
-                      options={[
-                        { val: 'sec', label: 'Sec / Neat' }, { val: 'cocktail', label: 'En cocktail' },
-                        { val: 'digestif', label: 'Digestif' }, { val: 'apéritif', label: 'Apéritif' },
-                      ]}
-                      selected={getFiltre('spiritueux', 'service')}
-                      onToggle={(v) => toggleFiltre('spiritueux', 'service', v)}
-                      accentColor='#7A4F1E' bgColor='#F7EFE4'
-                    />
-                  </>
-                )}
-
-                {/* ─── SANS ALCOOL */}
-                {ongletActif === 'sans_alcool' && parametres.types.includes('sans_alcool') && (
-                  <>
-                    <FiltreGroupe label="FAMILLE"
-                      options={[
-                        { val: 'kombucha', label: 'Kombucha' },
-                        { val: 'jus frais', label: 'Jus frais' },
-                        { val: 'eau aromatisée', label: 'Eau aromatisée' },
-                        { val: 'thé glacé', label: 'Thé glacé' },
-                        { val: 'kéfir', label: 'Kéfir' },
-                        { val: 'limonade artisanale', label: 'Limonade artisanale' },
-                        { val: 'shrub', label: 'Shrub / Vinaigre de fruit' },
-                        { val: 'mocktail', label: 'Mocktail' },
-                      ]}
-                      selected={getFiltre('sans_alcool', 'famille')}
-                      onToggle={(v) => toggleFiltre('sans_alcool', 'famille', v)}
-                      accentColor={ISP.sage} bgColor={ISP.sagePale}
-                    />
-                    <FiltreGroupe label="INTENSITÉ"
-                      options={[
-                        { val: 'léger et désaltérant', label: 'Léger & désaltérant' },
-                        { val: 'fruité et vif', label: 'Fruité & vif' },
-                        { val: 'complexe et fermenté', label: 'Complexe & fermenté' },
-                        { val: 'doux et rond', label: 'Doux & rond' },
-                      ]}
-                      selected={getFiltre('sans_alcool', 'intensite')}
-                      onToggle={(v) => toggleFiltre('sans_alcool', 'intensite', v)}
-                      accentColor={ISP.sage} bgColor={ISP.sagePale}
-                    />
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Budget */}
-            <div style={{ borderTop: `1px dashed ${ISP.rule}`, paddingTop: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: ISP.muted, marginBottom: 6 }}>BUDGET BOUTEILLE</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
-                {['- de 20€', '20-50€', '50-100€', '+ de 100€', 'Les trois niveaux'].map(b => (
-                  <button key={b} onClick={() => setParametres(prev => ({ ...prev, budget: b }))}
-                    style={{
-                      padding: '5px 12px', borderRadius: 999,
-                      border: `1px solid ${parametres.budget === b ? ISP.sage : ISP.rule}`,
-                      background: parametres.budget === b ? ISP.sagePale : ISP.card,
-                      color: parametres.budget === b ? ISP.sage : ISP.muted,
-                      fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-                    }}>
-                    {b}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Cave priorité */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <button onClick={() => setParametres(prev => ({ ...prev, cave_priorite: !prev.cave_priorite }))}
-                style={{ width: 36, height: 20, borderRadius: 999, background: parametres.cave_priorite ? ISP.burgundy : ISP.rule, border: 'none', cursor: 'pointer', position: 'relative' as const, flexShrink: 0, transition: 'background .2s' }}>
-                <span style={{ position: 'absolute' as const, top: 2, left: parametres.cave_priorite ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: 'white', transition: 'left .2s' }} />
+              <button
+                onClick={(e) => supprimerMenuSauvegarde(menu.id, e)}
+                style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 8, border: 'none', background: 'transparent', color: ISP.muted, cursor: 'pointer', display: 'grid', placeItems: 'center', fontSize: 13 }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = `${ISP.burgundy}15`; (e.currentTarget as HTMLButtonElement).style.color = ISP.burgundy }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = ISP.muted }}
+              >
+                ×
               </button>
-              <span style={{ fontSize: 12, color: ISP.muted, fontWeight: 700 }}>Priorité aux références de ma cave</span>
             </div>
-
-          </div>
+          ))
         )}
       </div>
-      {/* Sélecteur type de service */}
-<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-  <span style={{ fontSize: 11, fontWeight: 700, color: ISP.muted, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Service</span>
-  {([
-    { val: 'verre', label: '🍷 Au verre' },
-    { val: 'bouteille', label: '🍾 À la bouteille' },
-    { val: 'carte', label: '📋 À la carte' },
-  ] as const).map(({ val, label }) => (
-    <button key={val} type="button" onClick={() => setTypeService(val)}
-      style={{
-        padding: '5px 12px', borderRadius: 999,
-        border: `1.5px solid ${typeService === val ? ISP.burgundy : ISP.rule}`,
-        background: typeService === val ? '#F5E6E8' : 'transparent',
-        color: typeService === val ? ISP.burgundy : ISP.muted,
-        fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
-        cursor: 'pointer', transition: 'all .15s',
-      }}>
-      {label}
-    </button>
-  ))}
-</div>
-    <Tooltip text="Génère instantanément les meilleurs accords mets-boissons pour chaque plat saisi" position="top">
-  <button onClick={genererAccords} disabled={loading} style={{ marginTop: 4, background: loading ? ISP.muted : ISP.burgundy, color: ISP.card, border: 'none', borderRadius: 14, padding: '16px 22px', fontFamily: 'inherit', fontWeight: 800, fontSize: 15.5, cursor: loading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, boxShadow: '0 8px 22px -10px rgba(94,17,25,.45)', transition: 'all .2s', letterSpacing: '-0.005em', width: '100%' }}>
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
-      <SparkleIcon size={17} color={ISP.ochre} />
-      {loading ? 'Génération en cours…' : 'Générer les accords Ispalis'}
-    </span>
-    {!loading && (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 700, opacity: 0.75 }}>
-        Acte II <ArrowRightIcon size={14} />
-      </span>
     )}
-  </button>
-</Tooltip>
-    </section>
-  )
+
+    {/* Plats */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {plats.map((plat, i) => (
+        <BottleRow key={i} index={i + 1} value={plat} onChange={(v) => updatePlat(i, v)} />
+      ))}
+    </div>
+
+    {erreur && (
+      <div style={{ padding: '10px 14px', borderRadius: 10, background: '#FBE9EB', color: ISP.burgundy, fontSize: 13, fontWeight: 700, border: `1px solid ${ISP.burgundy}33` }}>
+        {erreur}
+      </div>
+    )}
+
+    {/* Sauvegarder menu */}
+    {filledCount > 0 && (
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <input
+          type="text"
+          value={nomMenuInput}
+          onChange={e => setNomMenuInput(e.target.value)}
+          placeholder="Nommer ce menu pour le sauvegarder…"
+          onKeyDown={e => e.key === 'Enter' && sauvegarderMenu()}
+          style={{
+            flex: 1, padding: '8px 12px', borderRadius: 10,
+            border: `1.5px solid ${ISP.rule}`, fontFamily: 'inherit',
+            fontSize: 13, color: ISP.ink, background: ISP.paperWarm,
+            outline: 'none',
+          }}
+        />
+        <button
+          onClick={sauvegarderMenu}
+          disabled={!nomMenuInput.trim() || savingMenu}
+          style={{
+            padding: '8px 14px', borderRadius: 10,
+            background: nomMenuInput.trim() ? ISP.terracotta : ISP.rule,
+            color: nomMenuInput.trim() ? '#fff' : ISP.muted,
+            border: 'none', cursor: nomMenuInput.trim() ? 'pointer' : 'not-allowed',
+            fontFamily: 'inherit', fontSize: 12.5, fontWeight: 800,
+            transition: 'all .15s', whiteSpace: 'nowrap' as const,
+          }}>
+          {savingMenu ? '…' : '💾 Sauvegarder'}
+        </button>
+      </div>
+    )}
+    {menuSavedMsg && (
+      <div style={{ fontSize: 12.5, color: ISP.sage, fontWeight: 700, textAlign: 'center' as const }}>
+        {menuSavedMsg}
+      </div>
+    )}
+
+    {/* Paramètres avancés — inchangé, garde ton bloc existant ici */}
+    {/* ... ton bloc parametresOuverts existant ... */}
+
+    {/* 3 boutons de génération */}
+    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, marginTop: 4 }}>
+
+      {/* Au verre */}
+      <Tooltip text="Génère un accord vin au verre pour chaque plat" position="top">
+        <button
+          onClick={() => { setModeSansAlcool(false); genererAccords() }}
+          disabled={loading}
+          style={{
+            width: '100%', background: loading && !modeSansAlcool ? ISP.muted : ISP.burgundy,
+            color: ISP.card, border: 'none', borderRadius: 14,
+            padding: '14px 22px', fontFamily: 'inherit', fontWeight: 800,
+            fontSize: 15, cursor: loading ? 'wait' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 16, boxShadow: '0 8px 22px -10px rgba(94,17,25,.45)',
+            transition: 'all .2s', letterSpacing: '-0.005em',
+          }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+            <SparkleIcon size={16} color={ISP.ochre} />
+            {loading && !modeSansAlcool ? 'Génération…' : '🍷 Accords au verre'}
+          </span>
+          <span style={{ fontSize: 11.5, fontWeight: 700, opacity: 0.7 }}>par plat</span>
+        </button>
+      </Tooltip>
+
+      {/* Sans alcool */}
+      <Tooltip text="Génère des accords sans alcool pour chaque plat" position="top">
+        <button
+          onClick={() => { setModeSansAlcool(true); genererAccords() }}
+          disabled={loading}
+          style={{
+            width: '100%', background: loading && modeSansAlcool ? ISP.muted : ISP.sage,
+            color: '#fff', border: 'none', borderRadius: 14,
+            padding: '14px 22px', fontFamily: 'inherit', fontWeight: 800,
+            fontSize: 15, cursor: loading ? 'wait' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 16, transition: 'all .2s', letterSpacing: '-0.005em',
+          }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+            <SparkleIcon size={16} color="#fff" />
+            {loading && modeSansAlcool ? 'Génération…' : '🫧 Accords sans alcool'}
+          </span>
+          <span style={{ fontSize: 11.5, fontWeight: 700, opacity: 0.7 }}>par plat</span>
+        </button>
+      </Tooltip>
+
+      {/* Bouteille menu */}
+      <Tooltip text="Génère un seul vin en bouteille qui accompagne l'ensemble du menu" position="top">
+        <button
+          onClick={genererAccordsBouteille}
+          disabled={loadingBouteille || filledCount === 0}
+          style={{
+            width: '100%',
+            background: loadingBouteille ? ISP.muted : ISP.terracotta,
+            color: '#fff', border: 'none', borderRadius: 14,
+            padding: '14px 22px', fontFamily: 'inherit', fontWeight: 800,
+            fontSize: 15, cursor: loadingBouteille || filledCount === 0 ? 'wait' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 16, transition: 'all .2s', letterSpacing: '-0.005em',
+          }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+            <SparkleIcon size={16} color="#fff" />
+            {loadingBouteille ? 'Génération…' : '🍾 Accord bouteille du menu'}
+          </span>
+          <span style={{ fontSize: 11.5, fontWeight: 700, opacity: 0.7 }}>tout le menu</span>
+        </button>
+      </Tooltip>
+
+    </div>
+  </section>
+)
 
   // ─── JSX accords (variable, pas une fonction — évite le bug de focus)
   const accordsSection = resultats ? (
@@ -732,7 +701,41 @@ const getFiltre = (type: string, cat: string) =>
         <span>Acte II · Vos accords</span>
         <span style={{ flex: 1, height: 1.5, background: `${ISP.terracotta}33` }} />
       </div>
-
+{/* Accord bouteille menu */}
+{accordBouteille && (
+  <div style={{ background: ISP.burgundy, color: ISP.card, borderRadius: 18, padding: '24px 28px', marginBottom: 24, position: 'relative', overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', bottom: -20, right: -10, opacity: 0.08 }}>
+      <BottleI color={ISP.ochre} size={140} />
+    </div>
+    <div style={{ position: 'relative' }}>
+      <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 800, color: ISP.ochre, marginBottom: 16 }}>
+        🍾 Accord bouteille — tout le menu
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        {[
+          { label: 'Notre recommandation', data: accordBouteille.accord_principal, color: ISP.ochre },
+          { label: 'Alternative', data: accordBouteille.accord_alternatif, color: ISP.ochreSoft },
+        ].map(({ label, data, color }) => (
+          <div key={label} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: '16px 18px', borderTop: `3px solid ${color}` }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color, textTransform: 'uppercase' as const, letterSpacing: '0.12em', marginBottom: 8 }}>{label}</div>
+            <div style={{ fontWeight: 800, fontSize: 16, color: '#fff', lineHeight: 1.3 }}>{data?.vin}</div>
+            <div style={{ fontSize: 12, color: `${ISP.card}99`, marginTop: 4 }}>🍾 {data?.prix_bouteille}</div>
+            <div style={{ fontSize: 13, fontStyle: 'italic', color: ISP.ochreSoft, marginTop: 10, lineHeight: 1.45 }}>« {data?.argument} »</div>
+            {data?.plats_couverts?.length > 0 && (
+              <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap' as const, gap: 5 }}>
+                {data.plats_couverts.map((p: string, i: number) => (
+                  <span key={i} style={{ fontSize: 10.5, padding: '2px 8px', borderRadius: 999, background: 'rgba(255,255,255,0.12)', color: ISP.card }}>
+                    {p}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
       {resultats.alertes_stock && resultats.alertes_stock.length > 0 && (
   <AlertesStock alertes={resultats.alertes_stock} />
 )}
