@@ -122,8 +122,7 @@ Structure exacte :
 }`,
     messages: [{
       role: "user",
-      content: `STOCK:\n${stockText}\n\nMENU COMPLET:\n${platsLimites.map((p, i) => `${i+1}. ${p}`).join('\n')}\n\nTrouve le meilleur vin en bouteille pour accompagner l'ensemble de ce menu.`
-    }],
+content: `STOCK:\n${stockText}\n\nMENU COMPLET:\n${platsLimites.map((p: string, i: number) => `${i+1}. ${p}`).join('\n')}\n\nTrouve le meilleur vin en bouteille pour accompagner l'ensemble de ce menu.`    }],
   });
 
   const raw = message.content.map((b: any) => b.type === "text" ? b.text : "").join("");
