@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Footer from '@/components/Footer'
 import Tooltip from '@/components/Tooltip';
+import PrintAccords from '@/components/PrintAccords'
 
 const ISP = {
   burgundy: '#5E1119',
@@ -701,6 +702,11 @@ body: JSON.stringify({
         <span>Acte II · Vos accords</span>
         <span style={{ flex: 1, height: 1.5, background: `${ISP.terracotta}33` }} />
       </div>
+      <PrintAccords
+  accords={resultats.accords || []}
+  accordBouteille={accordBouteille}
+  nomRestaurant={/* récupérer depuis Supabase ou laisser vide */}
+/>
 {/* Accord bouteille menu */}
 {accordBouteille && (
   <div style={{ background: ISP.burgundy, color: ISP.card, borderRadius: 18, padding: '24px 28px', marginBottom: 24, position: 'relative', overflow: 'hidden' }}>
