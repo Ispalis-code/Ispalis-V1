@@ -592,27 +592,47 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
   qty = isNaN(qtyRaw) || qtyRaw <= 0 ? 0 : Math.round(qtyRaw)
   if (qty <= 0) continue
 } else {
-  nomRef = get(['nom_reference', 'nom', 'name', 'vin', 'libelle', 'domaine'])
-  app = get(['appellation', 'aoc', 'region'])
-  const couleurRaw = get(['couleur', 'color', 'type']).toLowerCase()
-  if (couleurRaw.includes('blanc')) coul = 'blanc'
-  else if (couleurRaw.includes('ros')) coul = 'rose'
-  else if (couleurRaw.includes('bulles') || couleurRaw.includes('effervescent') || couleurRaw.includes('champagne')) coul = 'effervescent'
-  else coul = 'rouge'
-  const millRaw = parseInt(get(['millesime', 'vintage', 'annee']))
-  mill = isNaN(millRaw) ? null : millRaw
-  const qtyRaw = parseInt(get(['quantite', 'quantity', 'qty', 'stock']))
-  qty = isNaN(qtyRaw) ? 1 : qtyRaw
-  type_boisson = get(['type_boisson', 'type', 'categorie']) || 'vin'
-  const maturiteDebut = parseInt(get(['maturite_debut', 'debut_maturite', 'pret_a_partir_de']))
-  const maturiteFin = parseInt(get(['maturite_fin', 'fin_maturite', 'a_boire_avant']))
+  // Reconstituer le nom depuis Domaine + Appellation + Cuvée (style template Ispalis)
+const domaine = get(['domaine', 'nom_reference', 'nom', 'name', 'vin', 'libelle'])
+const cuvee = get(['cuvee', 'cuvée', 'libelle'])
+const regionRaw = get(['region', 'région'])
+nomRef = [domaine, cuvee].filter(Boolean).join(' - ') || domaine
+app = get(['appellation', 'aoc', 'region', 'région'])
+
+const couleurRaw = get(['couleur', 'color', 'type']).toLowerCase()
+if (couleurRaw.includes('blanc')) coul = 'blanc'
+else if (couleurRaw.includes('ros')) coul = 'rose'
+else if (couleurRaw.includes('effervescent') || couleurRaw.includes('bulles') || couleurRaw.includes('champagne') || couleurRaw.includes('orange')) coul = 'effervescent'
+else coul = 'rouge'
+
+const millRaw = parseInt(get(['millesime', 'millésime', 'vintage', 'annee']))
+mill = isNaN(millRaw) ? null : millRaw
+
+// Stock Cave en priorité, puis Stock Total, puis quantite
+const stockCaveRaw = parseFloat(get(['stock cave', 'stock_cave']))
+const stockTotalRaw = parseFloat(get(['stock total', 'stock_total', 'quantite', 'quantity', 'qty', 'stock']))
+const qtyRaw = !isNaN(stockCaveRaw) && stockCaveRaw > 0 ? stockCaveRaw : stockTotalRaw
+qty = isNaN(qtyRaw) || qtyRaw <= 0 ? 1 : Math.round(qtyRaw)
+
+type_boisson = get(['type_boisson', 'type de boisson', 'type', 'categorie', 'boisson']) || 'vin'
+
+const maturiteDebut = parseInt(get(['maturite_debut', 'prêt à boire à partir de', 'pret_a_boire', 'debut_maturite']))
+const maturiteFin = parseInt(get(['maturite_fin', 'à boire avant', 'a_boire_avant', 'fin_maturite']))
+
 }
           if (!nomRef) { errors++; continue }
           const { error } = await supabase.from('stocks').insert({
-            user_id: user.id, nom_reference: nomRef, appellation: app,
-            couleur: coul, millesime: mill, quantite: qty,
-            type_boisson, derniere_vente: new Date().toISOString().split('T')[0]
-          })
+  user_id: user.id,
+  nom_reference: nomRef,
+  appellation: app,
+  couleur: coul,
+  millesime: mill,
+  quantite: qty,
+  type_boisson,
+  derniere_vente: new Date().toISOString().split('T')[0],
+  maturite_debut: isNaN(maturiteDebut) ? null : maturiteDebut,
+  maturite_fin: isNaN(maturiteFin) ? null : maturiteFin,
+})
           if (error) { errors++ } else { imported++ }
         }
         setImportMsg(`${imported} references importees${errors > 0 ? ` (${errors} ignorees)` : ''}`)
