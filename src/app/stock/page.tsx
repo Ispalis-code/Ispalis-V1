@@ -813,8 +813,8 @@ const maturiteFin = parseInt(get(['maturite_fin', 'à boire avant', 'a_boire_ava
             </p>
             {/* Bouton télécharger template */}
 <a
-  href="/ispalis_template_cave (1).xlsx"
-    download="ispalis_template_cave (1).xlsx"
+  href="/ispalis_template.xlsx"
+    download="ispalis_template.xlsx"
     style={{
       display: 'inline-flex', alignItems: 'center', gap: 8,
       padding: '9px 14px', borderRadius: 10, marginBottom: 12,
