@@ -181,15 +181,11 @@ Réponds UNIQUEMENT en JSON, sans texte autour, sans markdown :
 {"debut": 2026, "fin": 2032}
 Les années doivent être des entiers. Si le millésime est inconnu, base-toi sur le type de vin.`
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 100,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      })
+      const res = await fetch('/api/maturite', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ prompt }),
+})
       const data = await res.json()
       const text = data.content?.[0]?.text || ''
       const clean = text.replace(/```json|```/g, '').trim()
@@ -621,8 +617,11 @@ qty = isNaN(qtyRaw) || qtyRaw <= 0 ? 1 : Math.round(qtyRaw)
 
 type_boisson = get(['type_boisson', 'type de boisson', 'type', 'categorie', 'boisson']) || 'vin'
 
-maturiteDebut = parseInt(get(['maturite_debut', 'prêt à boire à partir de', 'pret_a_boire', 'debut_maturite']))
-maturiteFin = parseInt(get(['maturite_fin', 'à boire avant', 'a_boire_avant', 'fin_maturite']))
+// Lecture directe par nom exact de colonne du template
+const maturiteDebutKey = Object.keys(row).find(k => k.toLowerCase().includes('boire') && k.toLowerCase().includes('partir'))
+const maturiteFinKey = Object.keys(row).find(k => k.toLowerCase().includes('boire') && (k.toLowerCase().includes('avant') || k.toLowerCase().includes('ann')))
+maturiteDebut = maturiteDebutKey ? parseInt(String(row[maturiteDebutKey])) : NaN
+maturiteFin = maturiteFinKey ? parseInt(String(row[maturiteFinKey])) : NaN
 }
 
           if (!nomRef) { errors++; continue }
