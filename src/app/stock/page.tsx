@@ -604,6 +604,8 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
   const qtyRaw = parseInt(get(['quantite', 'quantity', 'qty', 'stock']))
   qty = isNaN(qtyRaw) ? 1 : qtyRaw
   type_boisson = get(['type_boisson', 'type', 'categorie']) || 'vin'
+  const maturiteDebut = parseInt(get(['maturite_debut', 'debut_maturite', 'pret_a_partir_de']))
+  const maturiteFin = parseInt(get(['maturite_fin', 'fin_maturite', 'a_boire_avant']))
 }
           if (!nomRef) { errors++; continue }
           const { error } = await supabase.from('stocks').insert({
@@ -650,7 +652,9 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
         couleur: row['couleur'] || row['color'] || values[2] || 'rouge',
         millesime: parseInt(row['millesime'] || row['vintage'] || values[3]) || null,
         quantite: isNaN(qty) ? 1 : qty,
-        derniere_vente: new Date().toISOString().split('T')[0]
+        derniere_vente: new Date().toISOString().split('T')[0],
+        maturite_debut: parseInt(row['maturite_debut']) || null,  
+        maturite_fin: parseInt(row['maturite_fin']) || null,      
       })
       if (error) { errors++ } else { imported++ }
     }
