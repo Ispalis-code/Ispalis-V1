@@ -618,7 +618,7 @@ type_boisson = get(['type_boisson', 'type de boisson', 'type', 'categorie', 'boi
 
 const maturiteDebut = parseInt(get(['maturite_debut', 'prêt à boire à partir de', 'pret_a_boire', 'debut_maturite']))
 const maturiteFin = parseInt(get(['maturite_fin', 'à boire avant', 'a_boire_avant', 'fin_maturite']))
-
+}
 
           if (!nomRef) { errors++; continue }
           const { error } = await supabase.from('stocks').insert({
