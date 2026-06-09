@@ -551,6 +551,9 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
         const workbook = XLSX.read(buffer, { type: 'array' })
         const sheet = workbook.Sheets[workbook.SheetNames[0]]
         const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+        console.log('Headers bruts:', Object.keys(rows[0] || {}))
+        console.log('Maturite debut raw:', rows[1]?.['Prêt à boire à partir de'])
+        console.log('Maturite fin raw:', rows[1]?.['À boire avant (année)'])
         console.log('Premieres lignes:', JSON.stringify(rows.slice(0, 2)))
         console.log('Headers detectes:', Object.keys(rows[0] || {}).join(' | '))
         if (rows.length === 0) { setImportMsg('Fichier vide'); setImporting(false); return }
