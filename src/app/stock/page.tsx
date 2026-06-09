@@ -542,22 +542,19 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
       try {
-        const XLSX = await import('xlsx')        
-          const buffer = await file.arrayBuffer()
+        const XLSX = await import('xlsx')
+        const buffer = await file.arrayBuffer()
         const workbook = XLSX.read(buffer, { type: 'array' })
         const sheet = workbook.Sheets[workbook.SheetNames[0]]
         const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' })
-        console.log('Headers bruts:', Object.keys(rows[0] || {}))
-        console.log('Maturite debut raw:', rows[1]?.['Prêt à boire à partir de'])
-        console.log('Maturite fin raw:', rows[1]?.['À boire avant (année)'])
-        console.log('Premieres lignes:', JSON.stringify(rows.slice(0, 2)))
-        console.log('Headers detectes:', Object.keys(rows[0] || {}).join(' | '))
         if (rows.length === 0) { setImportMsg('Fichier vide'); setImporting(false); return }
         const headers = Object.keys(rows[0]).map(k => k.toLowerCase())
-        const isSommit = headers.some(h => h.includes('domaine')) && headers.some(h => h.includes('stock'))
+        const isSommit = headers.some(h => h.includes('id sommit')) || (headers.some(h => h.includes('domaine')) && headers.some(h => h.includes('stock cave')))
         let imported = 0
         let errors = 0
+
         for (const row of rows) {
+          // ─── Fonction get : cherche par mot-clé dans les noms de colonnes originaux
           const get = (names: string[]) => {
             for (const n of names) {
               const key = Object.keys(row).find(k => k.toLowerCase().includes(n))
@@ -565,6 +562,17 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
             }
             return ''
           }
+
+          // ─── Fonction getCol : comme get mais ignore les * et espaces (pour le template Ispalis)
+          const getCol = (keywords: string[]) => {
+            const key = Object.keys(row).find(k =>
+              keywords.some(kw =>
+                k.toLowerCase().replace(/[*\s]/g, '').includes(kw.toLowerCase().replace(/[*\s]/g, ''))
+              )
+            )
+            return key ? String(row[key]).trim() : ''
+          }
+
           let nomRef = ''
           let app = ''
           let coul = 'rouge'
@@ -573,72 +581,78 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
           let type_boisson = 'vin'
           let maturiteDebut = NaN
           let maturiteFin = NaN
-         if (isSommit) {
-  const domaine = get(['domaine'])
-  const appellation2 = get(['appellation'])
-  const cuvee = get(['cuvee', 'libelle'])
-  nomRef = [domaine, appellation2, cuvee].filter(Boolean).join(' - ')
-  app = appellation2
-  const couleurRaw = get(['couleur']).toLowerCase()
-  if (couleurRaw.includes('blanc')) coul = 'blanc'
-  else if (couleurRaw.includes('ros')) coul = 'rose'
-  else if (couleurRaw.includes('effervescent') || couleurRaw.includes('bulles') || couleurRaw.includes('champagne')) coul = 'effervescent'
-  else coul = 'rouge'
-  const millRaw = parseInt(get(['millesime', 'vintage', 'annee']))
-  mill = isNaN(millRaw) ? null : millRaw
-  const contenant = get(['contenant']).toLowerCase()
-  if (contenant && !contenant.includes('bouteille')) continue
-  const stockCave = get(['stock cave'])
-  const qtyRaw = parseFloat(stockCave !== '' ? stockCave : get(['stock total', 'stock', 'quantite', 'qty']))
-  qty = isNaN(qtyRaw) || qtyRaw <= 0 ? 0 : Math.round(qtyRaw)
-  if (qty <= 0) continue
-} else {
-  // Reconstituer le nom depuis Domaine + Appellation + Cuvée (style template Ispalis)
-const domaine = get(['domaine', 'nom_reference', 'nom', 'name', 'vin', 'libelle'])
-const cuvee = get(['cuvee', 'cuvée', 'libelle'])
-const regionRaw = get(['region', 'région'])
-nomRef = [domaine, cuvee].filter(Boolean).join(' - ') || domaine
-app = get(['appellation', 'aoc', 'region', 'région'])
 
-const couleurRaw = get(['couleur', 'color', 'type']).toLowerCase()
-if (couleurRaw.includes('blanc')) coul = 'blanc'
-else if (couleurRaw.includes('ros')) coul = 'rose'
-else if (couleurRaw.includes('effervescent') || couleurRaw.includes('bulles') || couleurRaw.includes('champagne') || couleurRaw.includes('orange')) coul = 'effervescent'
-else coul = 'rouge'
+          if (isSommit) {
+            // ─── Format Sommit
+            const domaine = get(['domaine'])
+            const appellation2 = get(['appellation'])
+            const cuvee = get(['cuvee', 'libelle'])
+            nomRef = [domaine, appellation2, cuvee].filter(Boolean).join(' - ')
+            app = appellation2
+            const couleurRaw = get(['couleur']).toLowerCase()
+            if (couleurRaw.includes('blanc')) coul = 'blanc'
+            else if (couleurRaw.includes('ros')) coul = 'rose'
+            else if (couleurRaw.includes('effervescent') || couleurRaw.includes('bulles') || couleurRaw.includes('champagne')) coul = 'effervescent'
+            else coul = 'rouge'
+            const millRaw = parseInt(get(['millesime', 'vintage', 'annee']))
+            mill = isNaN(millRaw) ? null : millRaw
+            const contenant = get(['contenant']).toLowerCase()
+            if (contenant && !contenant.includes('bouteille')) continue
+            const stockCave = get(['stock cave'])
+            const qtyRaw = parseFloat(stockCave !== '' ? stockCave : get(['stock total', 'stock', 'quantite', 'qty']))
+            qty = isNaN(qtyRaw) || qtyRaw <= 0 ? 0 : Math.round(qtyRaw)
+            if (qty <= 0) continue
+          } else {
+            // ─── Format template Ispalis (colonnes avec *)
+            const domaine = getCol(['domaine'])
+            const cuvee = getCol(['cuvee', 'cuvée'])
+            nomRef = [domaine, cuvee].filter(Boolean).join(' - ') || domaine
+            app = getCol(['appellation'])
 
-const millRaw = parseInt(get(['millesime', 'millésime', 'vintage', 'annee']))
-mill = isNaN(millRaw) ? null : millRaw
+            const couleurRaw = getCol(['couleur']).toLowerCase()
+            if (couleurRaw.includes('blanc')) coul = 'blanc'
+            else if (couleurRaw.includes('ros')) coul = 'rose'
+            else if (couleurRaw.includes('effervescent') || couleurRaw.includes('bulles') || couleurRaw.includes('champagne') || couleurRaw.includes('orange')) coul = 'effervescent'
+            else coul = 'rouge'
 
-// Stock Cave en priorité, puis Stock Total, puis quantite
-const stockCaveRaw = parseFloat(get(['stock cave', 'stock_cave']))
-const stockTotalRaw = parseFloat(get(['stock total', 'stock_total', 'quantite', 'quantity', 'qty', 'stock']))
-const qtyRaw = !isNaN(stockCaveRaw) && stockCaveRaw > 0 ? stockCaveRaw : stockTotalRaw
-qty = isNaN(qtyRaw) || qtyRaw <= 0 ? 1 : Math.round(qtyRaw)
+            const millRaw = parseInt(getCol(['millésime', 'millesime', 'vintage', 'annee']))
+            mill = isNaN(millRaw) ? null : millRaw
 
-type_boisson = get(['type_boisson', 'type de boisson', 'type', 'categorie', 'boisson']) || 'vin'
+            const stockCaveRaw = parseFloat(getCol(['stockcave', 'stock cave']))
+            const stockTotalRaw = parseFloat(getCol(['stocktotal', 'stock total', 'quantite', 'quantity', 'qty']))
+            const qtyRaw = !isNaN(stockCaveRaw) && stockCaveRaw > 0 ? stockCaveRaw : stockTotalRaw
+            qty = isNaN(qtyRaw) || qtyRaw <= 0 ? 1 : Math.round(qtyRaw)
 
-// Lecture directe par nom exact de colonne du template
-const maturiteDebutKey = Object.keys(row).find(k => k.toLowerCase().includes('boire') && k.toLowerCase().includes('partir'))
-const maturiteFinKey = Object.keys(row).find(k => k.toLowerCase().includes('boire') && (k.toLowerCase().includes('avant') || k.toLowerCase().includes('ann')))
-maturiteDebut = maturiteDebutKey ? parseInt(String(row[maturiteDebutKey])) : NaN
-maturiteFin = maturiteFinKey ? parseInt(String(row[maturiteFinKey])) : NaN
-}
+            type_boisson = getCol(['typeboisson', 'type de boisson', 'boisson']) || 'vin'
+
+            // Maturité — cherche par mots-clés dans le nom de colonne
+            const maturiteDebutKey = Object.keys(row).find(k =>
+              k.toLowerCase().includes('boire') && k.toLowerCase().includes('partir')
+            )
+            const maturiteFinKey = Object.keys(row).find(k =>
+              k.toLowerCase().includes('boire') && k.toLowerCase().includes('avant')
+            )
+            maturiteDebut = maturiteDebutKey ? parseInt(String(row[maturiteDebutKey])) : NaN
+            maturiteFin = maturiteFinKey ? parseInt(String(row[maturiteFinKey])) : NaN
+          }
 
           if (!nomRef) { errors++; continue }
+
           const { error } = await supabase.from('stocks').insert({
-  user_id: user.id,
-  nom_reference: nomRef,
-  appellation: app,
-  couleur: coul,
-  millesime: mill,
-  quantite: qty,
-  type_boisson,
-  derniere_vente: new Date().toISOString().split('T')[0],
-  maturite_debut: isNaN(maturiteDebut) ? null : maturiteDebut,
-  maturite_fin: isNaN(maturiteFin) ? null : maturiteFin,
-})
+            user_id: user.id,
+            nom_reference: nomRef,
+            appellation: app,
+            couleur: coul,
+            millesime: mill,
+            quantite: qty,
+            type_boisson,
+            derniere_vente: new Date().toISOString().split('T')[0],
+            maturite_debut: isNaN(maturiteDebut) ? null : maturiteDebut,
+            maturite_fin: isNaN(maturiteFin) ? null : maturiteFin,
+          })
           if (error) { errors++ } else { imported++ }
         }
+
         setImportMsg(`${imported} references importees${errors > 0 ? ` (${errors} ignorees)` : ''}`)
         setImportOK(imported > 0)
         await chargerStock()
@@ -652,6 +666,7 @@ maturiteFin = maturiteFinKey ? parseInt(String(row[maturiteFinKey])) : NaN
       return
     }
 
+    // ─── Format CSV
     setImporting(true)
     setImportMsg('')
     setImportOK(false)
@@ -671,14 +686,15 @@ maturiteFin = maturiteFinKey ? parseInt(String(row[maturiteFinKey])) : NaN
       const qty = parseInt(row['quantite'] || row['quantity'] || row['qty'] || values[4] || '1')
       if (!nomRef) { errors++; continue }
       const { error } = await supabase.from('stocks').insert({
-        user_id: user.id, nom_reference: nomRef,
+        user_id: user.id,
+        nom_reference: nomRef,
         appellation: row['appellation'] || values[1] || '',
         couleur: row['couleur'] || row['color'] || values[2] || 'rouge',
         millesime: parseInt(row['millesime'] || row['vintage'] || values[3]) || null,
         quantite: isNaN(qty) ? 1 : qty,
         derniere_vente: new Date().toISOString().split('T')[0],
-        maturite_debut: parseInt(row['maturite_debut']) || null,  
-        maturite_fin: parseInt(row['maturite_fin']) || null,      
+        maturite_debut: parseInt(row['maturite_debut']) || null,
+        maturite_fin: parseInt(row['maturite_fin']) || null,
       })
       if (error) { errors++ } else { imported++ }
     }
@@ -688,6 +704,7 @@ maturiteFin = maturiteFinKey ? parseInt(String(row[maturiteFinKey])) : NaN
     setImporting(false)
     if (fileRef.current) fileRef.current.value = ''
   }
+    
 
   const stats = references.reduce((acc, r) => {
     acc[r.couleur] = (acc[r.couleur] || 0) + 1
