@@ -792,8 +792,7 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
               Formats acceptes : CSV, Excel (.xlsx) — Sommit detecte automatiquement
             </p>
             {/* Bouton télécharger template */}
-
- href="/ispalis_template_cave.xlsx"
+href="/ispalis_template_cave.xlsx"
   download="ispalis_template_cave.xlsx"
   style={{
     display: 'inline-flex', alignItems: 'center', gap: 8,
