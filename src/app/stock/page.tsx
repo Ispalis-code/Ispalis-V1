@@ -572,6 +572,8 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
           let mill = null as number | null
           let qty = 1
           let type_boisson = 'vin'
+          let maturiteDebut = NaN
+          let maturiteFin = NaN
          if (isSommit) {
   const domaine = get(['domaine'])
   const appellation2 = get(['appellation'])
@@ -616,8 +618,8 @@ qty = isNaN(qtyRaw) || qtyRaw <= 0 ? 1 : Math.round(qtyRaw)
 
 type_boisson = get(['type_boisson', 'type de boisson', 'type', 'categorie', 'boisson']) || 'vin'
 
-const maturiteDebut = parseInt(get(['maturite_debut', 'prêt à boire à partir de', 'pret_a_boire', 'debut_maturite']))
-const maturiteFin = parseInt(get(['maturite_fin', 'à boire avant', 'a_boire_avant', 'fin_maturite']))
+maturiteDebut = parseInt(get(['maturite_debut', 'prêt à boire à partir de', 'pret_a_boire', 'debut_maturite']))
+maturiteFin = parseInt(get(['maturite_fin', 'à boire avant', 'a_boire_avant', 'fin_maturite']))
 }
 
           if (!nomRef) { errors++; continue }
