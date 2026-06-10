@@ -339,13 +339,16 @@ useEffect(() => { chargerStock(); chargerMenusSauvegardes() }, [])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
   const { data } = await supabase
-    .from('menus')
-    .select('*')
-    .eq('user_id', user.id)
-    .not('nom_menu', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(20)
-  if (data) setMenusSauvegardes(data)
+  .from('menus')
+  .select('*, recommandations(id)')
+  .eq('user_id', user.id)
+  .not('nom_menu', 'is', null)
+  .order('created_at', { ascending: false })
+  .limit(20)
+if (data) setMenusSauvegardes(data.map(m => ({
+  ...m,
+  a_des_accords: m.recommandations && m.recommandations.length > 0
+})))
 }
 
 const sauvegarderMenu = async () => {
@@ -367,7 +370,7 @@ const sauvegarderMenu = async () => {
   setSavingMenu(false)
 }
 
-const chargerMenu = (menu: any) => {
+const chargerMenu = async (menu: any) => {
   const filledCount = plats.filter(p => p.trim()).length
   if (filledCount > 0 && !confirm('Remplacer les plats actuels par ce menu ?')) return
   const newPlats = [...menu.plats, '', '', '', ''].slice(0, 5)
@@ -375,6 +378,27 @@ const chargerMenu = (menu: any) => {
   setPanneauMenus(false)
   setResultats(null)
   setAccordBouteille(null)
+
+  // Chercher les derniers accords associés à ce menu
+  try {
+    const { data } = await supabase
+      .from('recommandations')
+      .select('*')
+      .eq('menu_id', menu.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (data?.accords) {
+      setResultats({
+        accords: data.accords,
+        alertes_stock: data.alertes_stock || [],
+        a_valoriser: data.a_valoriser || [],
+      })
+    }
+  } catch (e) {
+    console.error('Erreur chargement accords', e)
+  }
 }
 
 const supprimerMenuSauvegarde = async (id: string, e: React.MouseEvent) => {
@@ -548,9 +572,14 @@ body: JSON.stringify({
             >
               <div>
                 <div style={{ fontSize: 13.5, fontWeight: 800, color: ISP.ink }}>{menu.nom_menu}</div>
-                <div style={{ fontSize: 11.5, color: ISP.muted, marginTop: 2 }}>
-                  {menu.plats?.length} plat{menu.plats?.length > 1 ? 's' : ''} · {new Date(menu.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
-                </div>
+                <div style={{ fontSize: 11.5, color: ISP.muted, marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+  {menu.plats?.length} plat{menu.plats?.length > 1 ? 's' : ''} · {new Date(menu.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+  {menu.a_des_accords && (
+    <span style={{ fontSize: 10, fontWeight: 800, padding: '1px 6px', borderRadius: 999, background: ISP.sagePale, color: ISP.sage }}>
+      accords sauvegardés
+    </span>
+  )}
+</div>
                 <div style={{ fontSize: 11, color: ISP.muted, marginTop: 2, fontStyle: 'italic' }}>
                   {menu.plats?.slice(0, 2).join(', ')}{menu.plats?.length > 2 ? '…' : ''}
                 </div>
