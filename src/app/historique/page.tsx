@@ -121,7 +121,7 @@ const AccordPlat = ({ accord }: { accord: any }) => {
 }
 
 // Carte d'une session
-const SessionCard = ({ session, search }: { session: any; search: string }) => {
+const SessionCard = ({ session, search, onDelete }: { session: any; search: string; onDelete: () => void }) => {
   const [open, setOpen] = useState(false)
   const date = new Date(session.created_at)
   const dateStr = date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -164,7 +164,26 @@ const SessionCard = ({ session, search }: { session: any; search: string }) => {
             {typeInfo.label}
           </div>
         </div>
-        <span style={{ fontSize: 18, color: ISP.muted, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▾</span>
+       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+  <button
+    onClick={(e) => { e.stopPropagation(); onDelete() }}
+    style={{
+      width: 28, height: 28, borderRadius: 8,
+      border: 'none', background: 'transparent',
+      color: ISP.muted, cursor: 'pointer',
+      display: 'grid', placeItems: 'center',
+      transition: 'all .15s',
+    }}
+    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${ISP.burgundy}15`; (e.currentTarget as HTMLButtonElement).style.color = ISP.burgundy }}
+    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = ISP.muted }}
+  >
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  </button>
+  <span style={{ fontSize: 18, color: ISP.muted, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>▾</span>
+</div>
       </button>
 
       {/* Accords */}
@@ -188,6 +207,11 @@ export default function Historique() {
   const [onglet, setOnglet] = useState<'verre' | 'bouteille' | 'carte'>('verre')
   const [search, setSearch] = useState('')
   const supabase = createClient()
+  const supprimerSession = async (id: string) => {
+  if (!confirm('Supprimer cet accord de l\'historique ?')) return
+  await supabase.from('recommandations').delete().eq('id', id)
+  await chargerHistorique()
+}
   const router = useRouter()
 
   useEffect(() => { chargerHistorique() }, [])
@@ -331,7 +355,7 @@ export default function Historique() {
 
                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
                   {groupes[periode].map((session: any) => (
-                    <SessionCard key={session.id} session={session} search={search} />
+                    <SessionCard key={session.id} session={session} search={search} onDelete={() => supprimerSession(session.id)} />
                   ))}
                 </div>
                 
