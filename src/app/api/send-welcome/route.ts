@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     console.log('send-welcome appelé pour:', email)
 
     const res = await fetch(
-      'https://skzdcyeafjgyrhshgmxp.supabase.co/functions/v1/welcome-email',
+      'https://skzdcyeafjgyrhshgmxp.supabase.co/functions/v1/swift-service',
       {
         method: 'POST',
         headers: {
