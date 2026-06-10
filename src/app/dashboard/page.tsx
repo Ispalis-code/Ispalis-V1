@@ -465,6 +465,7 @@ const genererAccordsBouteille = async () => {
   const genererAccords = async () => {
   const platsRemplis = plats.filter(p => p.trim() !== '')
   if (platsRemplis.length === 0) { setErreur('Ajoutez au moins un plat'); return }
+  if (!nomMenuInput.trim()) { setErreur('Donnez un nom à ce menu avant de générer'); return }
   setLoading(true)
   setErreur('')
   setResultats(null)
@@ -499,6 +500,7 @@ body: JSON.stringify({
           const { data: menu } = await supabase.from('menus').insert({
             user_id: user.id,
             plats: platsRemplis,
+            nom_menu: nomMenuInput.trim(),
             date_menu: new Date().toISOString().split('T')[0],
           }).select().single()
           if (menu) {
@@ -626,21 +628,31 @@ body: JSON.stringify({
       </div>
     )}
 
-    {/* Sauvegarder menu */}
-    {filledCount > 0 && (
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input
-          type="text"
-          value={nomMenuInput}
-          onChange={e => setNomMenuInput(e.target.value)}
-          placeholder="Nommer ce menu pour le sauvegarder…"
-          onKeyDown={e => e.key === 'Enter' && sauvegarderMenu()}
-          style={{
-            flex: 1, padding: '8px 12px', borderRadius: 10,
-            border: `1.5px solid ${ISP.rule}`, fontFamily: 'inherit',
-            fontSize: 13, color: ISP.ink, background: ISP.paperWarm,
-            outline: 'none',
-          }}
+    {/* Nom du menu — obligatoire avant génération */}
+<div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: ISP.muted }}>
+    Nom du service *
+  </div>
+  <input
+    type="text"
+    value={nomMenuInput}
+    onChange={e => setNomMenuInput(e.target.value)}
+    placeholder="ex : Menu du midi — Lundi 9 juin"
+    onKeyDown={e => e.key === 'Enter' && e.preventDefault()}
+    style={{
+      width: '100%', padding: '10px 14px', borderRadius: 10,
+      border: `1.5px solid ${!nomMenuInput.trim() && erreur ? ISP.burgundy : ISP.rule}`,
+      fontFamily: 'inherit', fontSize: 13.5, color: ISP.ink,
+      background: ISP.paperWarm, outline: 'none',
+      boxSizing: 'border-box' as const,
+    }}
+    onFocus={e => (e.target as HTMLInputElement).style.borderColor = ISP.burgundy}
+    onBlur={e => (e.target as HTMLInputElement).style.borderColor = ISP.rule}
+  />
+  {menuSavedMsg && (
+    <div style={{ fontSize: 12.5, color: ISP.sage, fontWeight: 700 }}>{menuSavedMsg}</div>
+  )}
+</div>
         />
         <button
           onClick={sauvegarderMenu}
