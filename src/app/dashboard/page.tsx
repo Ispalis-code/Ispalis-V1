@@ -357,12 +357,27 @@ const sauvegarderMenu = async () => {
   setSavingMenu(true)
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
-  await supabase.from('menus').insert({
+
+  // Créer le menu nommé
+  const { data: menu } = await supabase.from('menus').insert({
     user_id: user.id,
     plats: platsRemplis,
     nom_menu: nomMenuInput.trim(),
     date_menu: new Date().toISOString().split('T')[0],
-  })
+  }).select().single()
+
+  // Si des accords ont été générés, les relier à ce menu
+  if (menu && resultats) {
+    await supabase.from('recommandations').insert({
+      user_id: user.id,
+      menu_id: menu.id,
+      accords: resultats.accords || [],
+      alertes_stock: resultats.alertes_stock || [],
+      a_valoriser: resultats.a_valoriser || [],
+      type_service: typeService,
+    })
+  }
+
   setNomMenuInput('')
   setMenuSavedMsg('Menu sauvegardé ✓')
   setTimeout(() => setMenuSavedMsg(''), 3000)
