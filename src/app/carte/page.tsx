@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Tooltip from '@/components/Tooltip'
 import PrintAccords from '@/components/PrintAccords'
+import Footer from '@/components/Footer'
 
 const ISP = {
   burgundy: '#5E1119',
@@ -850,6 +851,7 @@ const getFiltre = (type: string, cat: string) =>
           </div>
         </>
       )}
+        <Footer />
     </main>
   )
 }
