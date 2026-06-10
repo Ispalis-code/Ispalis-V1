@@ -87,7 +87,10 @@ export default function Inscription() {
           email: email,
           nom_etablissement: nom,
         },
+         headers: {
+    Authorization: '',
       })
+      
     } catch (e) {
       console.error('Erreur email onboarding', e)
     }
