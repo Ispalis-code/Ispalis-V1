@@ -69,18 +69,32 @@ export default function Inscription() {
   const supabase = createClient()
 
   const handleInscription = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { nom_etablissement: nom } }
-    })
-    if (error) { setError(error.message) }
-    else { router.push('/dashboard') }
-    setLoading(false)
+  e.preventDefault()
+  setLoading(true)
+  setError('')
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { nom_etablissement: nom } }
+  })
+  if (error) {
+    setError(error.message)
+  } else {
+    // Envoyer l'email d'onboarding
+    try {
+      await supabase.functions.invoke('welcome-email', {
+        body: {
+          email: email,
+          nom_etablissement: nom,
+        },
+      })
+    } catch (e) {
+      console.error('Erreur email onboarding', e)
+    }
+    router.push('/dashboard')
   }
+  setLoading(false)
+}
 
   return (
     <main style={{ background: ISP.paper, minHeight: '100vh', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
