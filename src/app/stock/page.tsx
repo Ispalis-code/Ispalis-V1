@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Tooltip from '@/components/Tooltip'
+import Footer from '@/components/Footer'
 
 const ISP = {
   burgundy: '#5E1119',
@@ -921,6 +922,7 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
           )}
         </section>
       </div>
+      <Footer />
     </main>
   )
 }
