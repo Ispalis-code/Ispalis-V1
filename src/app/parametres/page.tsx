@@ -492,6 +492,7 @@ const [seuils, setSeuils] = useState<Record<string, number>>(SEUILS_DEFAUT)
           </div>
         </div>
       </form>
+      <Footer />
     </main>
   )
 }
@@ -641,6 +642,6 @@ function TonCard({ title, quote, active, onClick }: {
         « {quote} »
       </div>
     </div>
-    <Footer />
+  
   )
 }
