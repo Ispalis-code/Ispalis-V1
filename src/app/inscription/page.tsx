@@ -80,14 +80,14 @@ export default function Inscription() {
   if (error) {
     setError(error.message)
   } else {
-    // Envoyer l'email d'onboarding
+    console.log('Inscription réussie, envoi email onboarding...')
     try {
-      await fetch('/api/send-welcome', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, nom_etablissement: nom }),
-})
-      
+      const r = await fetch('/api/send-welcome', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, nom_etablissement: nom }),
+      })
+      console.log('Réponse send-welcome:', r.status)
     } catch (e) {
       console.error('Erreur email onboarding', e)
     }
