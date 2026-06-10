@@ -83,13 +83,11 @@ export default function Inscription() {
     // Envoyer l'email d'onboarding
     try {
       await supabase.functions.invoke('welcome-email', {
-        body: {
-          email: email,
-          nom_etablissement: nom,
-        },
-         headers: {
-    Authorization: '',
-      })
+  body: {
+    email: email,
+    nom_etablissement: nom,
+  },
+})
       
     } catch (e) {
       console.error('Erreur email onboarding', e)
