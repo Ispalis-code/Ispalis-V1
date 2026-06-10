@@ -82,11 +82,10 @@ export default function Inscription() {
   } else {
     // Envoyer l'email d'onboarding
     try {
-      await supabase.functions.invoke('welcome-email', {
-  body: {
-    email: email,
-    nom_etablissement: nom,
-  },
+      await fetch('/api/send-welcome', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, nom_etablissement: nom }),
 })
       
     } catch (e) {
