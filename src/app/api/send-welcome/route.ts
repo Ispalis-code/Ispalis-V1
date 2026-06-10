@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(request: NextRequest) {
   try {
     const { email, nom_etablissement } = await request.json()
+    console.log('send-welcome appelé pour:', email)
 
     const res = await fetch(
       'https://skzdcyeafjgyrhshgmxp.supabase.co/functions/v1/welcome-email',
@@ -16,8 +17,12 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    return NextResponse.json({ success: res.ok })
+    const data = await res.json()
+    console.log('Réponse Supabase:', res.status, JSON.stringify(data))
+
+    return NextResponse.json({ success: res.ok, data })
   } catch (err) {
-    return NextResponse.json({ success: false })
+    console.error('Erreur send-welcome:', err)
+    return NextResponse.json({ success: false, error: String(err) })
   }
 }
