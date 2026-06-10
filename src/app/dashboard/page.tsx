@@ -462,10 +462,11 @@ const genererAccordsBouteille = async () => {
     setPlats(newPlats)
   }
 
-  const genererAccords = async () => {
+  const genererAccords = async (forceSansAlcool = false) => {
   const platsRemplis = plats.filter(p => p.trim() !== '')
   if (platsRemplis.length === 0) { setErreur('Ajoutez au moins un plat'); return }
   if (!nomMenuInput.trim()) { setErreur('Donnez un nom à ce menu avant de générer'); return }
+  setModeSansAlcool(forceSansAlcool)
   setLoading(true)
   setErreur('')
   setResultats(null)
@@ -480,16 +481,15 @@ const genererAccordsBouteille = async () => {
     const response = await fetch('/api/recommandations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Dans genererAccords, dans le body de la requête, ajoute :
-body: JSON.stringify({
-  plats: platsRemplis,
-  stock: stockFormatted,
-  ton: 'professionnel',
-  parametres: modeSansAlcool
-    ? { ...parametres, types: ['sans_alcool'], filtres: {} }
-    : parametres,
-  type_service: typeService,
-}),
+      body: JSON.stringify({
+        plats: platsRemplis,
+        stock: stockFormatted,
+        ton: 'professionnel',
+        parametres: forceSansAlcool
+          ? { ...parametres, types: ['sans_alcool'], filtres: {} }
+          : parametres,
+        type_service: forceSansAlcool ? 'verre' : typeService,
+      }),
     })
     const data = await response.json()
     if (data.success) {
@@ -669,7 +669,7 @@ body: JSON.stringify({
       {/* Au verre */}
       <Tooltip text="Génère un accord vin au verre pour chaque plat" position="top">
         <button
-          onClick={() => { setModeSansAlcool(false); genererAccords() }}
+          onClick={() => genererAccords(false)}
           disabled={loading}
           style={{
             width: '100%', background: loading && !modeSansAlcool ? ISP.muted : ISP.burgundy,
@@ -691,7 +691,7 @@ body: JSON.stringify({
       {/* Sans alcool */}
       <Tooltip text="Génère des accords sans alcool pour chaque plat" position="top">
         <button
-          onClick={() => { setModeSansAlcool(true); genererAccords() }}
+         onClick={() => genererAccords(true)}
           disabled={loading}
           style={{
             width: '100%', background: loading && modeSansAlcool ? ISP.muted : ISP.sage,
