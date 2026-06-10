@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import Tooltip from '@/components/Tooltip'
 import { useTooltip } from '@/context/TooltipContext'
+import Footer from '@/components/Footer'
 
 // ─── Ispalis tokens
 const ISP = {
@@ -640,5 +641,6 @@ function TonCard({ title, quote, active, onClick }: {
         « {quote} »
       </div>
     </div>
+    <Footer />
   )
 }
