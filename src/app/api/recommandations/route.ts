@@ -146,13 +146,27 @@ const stockText = stock && stock.length > 0
   : "Aucun stock";
     
     const contraintes = buildContraintes(parametres)
+    const isSansAlcool = parametres?.types?.length === 1 && parametres.types[0] === 'sans_alcool'
 
+const systemPrompt = isSansAlcool ? `Tu es le sommelier IA d'Ispalis. Reponds UNIQUEMENT en JSON valide sans texte avant ou apres.
+Tu dois proposer UNIQUEMENT des boissons sans alcool — aucun vin, aucune biere alcoolisée, aucun spiritueux.
+Sont autorisés : kombucha, kéfir, eau aromatisée maison, jus de fruits frais, thé glacé, infusion froide, limonade artisanale, lait végétal, bouillon froid, jus de légumes, shrub, mocktail aux herbes.
+Toujours préciser "artisanal" ou "maison" pour valoriser la suggestion.
+
+Structure exacte pour UN seul plat — les 3 niveaux sont des alternatives sans alcool à différents prix :
+{
+  "plat": "nom exact",
+  "accord_accessible": {"vin": "nom de la boisson sans alcool", "prix_verre": "3-5EUR", "prix_bouteille": "8-15EUR", "argument": "phrase courte"},
+  "accord_intermediaire": {"vin": "nom de la boisson sans alcool", "prix_verre": "5-8EUR", "prix_bouteille": "15-25EUR", "argument": "phrase courte"},
+  "accord_prestige": {"vin": "nom de la boisson sans alcool", "prix_verre": "8-12EUR", "prix_bouteille": "25-40EUR", "argument": "phrase courte"},
+  "accord_sans_alcool": {"boisson": "meilleure option sans alcool", "argument": "phrase courte"}
+}` : SYSTEM_PROMPT
     const accords = [];
     for (const plat of platsLimites) {
       const message = await client.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 700,
-        system: SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: [{
           role: "user",
           content: `STOCK:\n${stockText}${contraintes}\n\nPLAT: ${plat}\nTON: ${ton || "professionnel"}`
