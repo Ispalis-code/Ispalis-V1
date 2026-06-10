@@ -653,22 +653,7 @@ body: JSON.stringify({
     <div style={{ fontSize: 12.5, color: ISP.sage, fontWeight: 700 }}>{menuSavedMsg}</div>
   )}
 </div>
-        />
-        <button
-          onClick={sauvegarderMenu}
-          disabled={!nomMenuInput.trim() || savingMenu}
-          style={{
-            padding: '8px 14px', borderRadius: 10,
-            background: nomMenuInput.trim() ? ISP.terracotta : ISP.rule,
-            color: nomMenuInput.trim() ? '#fff' : ISP.muted,
-            border: 'none', cursor: nomMenuInput.trim() ? 'pointer' : 'not-allowed',
-            fontFamily: 'inherit', fontSize: 12.5, fontWeight: 800,
-            transition: 'all .15s', whiteSpace: 'nowrap' as const,
-          }}>
-          {savingMenu ? '…' : '💾 Sauvegarder'}
-        </button>
-      </div>
-    )}
+       
     {menuSavedMsg && (
       <div style={{ fontSize: 12.5, color: ISP.sage, fontWeight: 700, textAlign: 'center' as const }}>
         {menuSavedMsg}
