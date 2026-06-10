@@ -169,7 +169,7 @@ const SessionCard = ({ session, search }: { session: any; search: string }) => {
 
       {/* Accords */}
       {(open || search.trim()) && accordsFiltres.length > 0 && (
-  <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column' as const, gap: 8, borderTop: `1px dashed ${ISP.rule}`, paddingTop: 16 }}>
+ <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column' as const, gap: 8, borderTop: `1px dashed ${ISP.rule}` }}>
     {accordsFiltres.map((accord: any, i: number) => (
       <AccordPlat key={i} accord={accord} />
     ))}
