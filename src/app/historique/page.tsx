@@ -151,11 +151,11 @@ const SessionCard = ({ session, search }: { session: any; search: string }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div style={{ textAlign: 'left' as const }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: ISP.ink, letterSpacing: '-0.005em' }}>
-              {dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}
-            </div>
-            <div style={{ fontSize: 12, color: ISP.muted, marginTop: 2 }}>
-              {heureStr} · {accords.length} plat{accords.length > 1 ? 's' : ''}
-            </div>
+  {session.menus?.nom_menu || dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}
+</div>
+<div style={{ fontSize: 12, color: ISP.muted, marginTop: 2 }}>
+  {dateStr.charAt(0).toUpperCase() + dateStr.slice(1)} · {heureStr} · {accords.length} plat{accords.length > 1 ? 's' : ''}
+</div>
           </div>
           <div style={{
             fontSize: 11, fontWeight: 800, padding: '3px 10px', borderRadius: 999,
@@ -197,7 +197,7 @@ export default function Historique() {
     if (!user) { router.push('/connexion'); return }
     const { data } = await supabase
       .from('recommandations')
-      .select('*, menus(plats, date_menu)')
+      .select('*, menus(plats, date_menu, nom_menu)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(200)
