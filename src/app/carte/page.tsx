@@ -275,6 +275,9 @@ export default function Carte() {
   const [accords, setAccords] = useState<any[]>([])
   const [alertes, setAlertes] = useState<any[]>([])
   const [savedMsg, setSavedMsg] = useState('')
+  const [nomMenuInput, setNomMenuInput] = useState('')
+const [menuSavedMsg, setMenuSavedMsg] = useState('')
+const [typeService, setTypeService] = useState<'verre' | 'bouteille' | 'carte'>('carte')
  const [parametres, setParametres] = useState({
   types: ['vin'] as string[],
   filtres: {} as Record<string, string[]>,
@@ -387,15 +390,30 @@ const getFiltre = (type: string, cat: string) =>
   }
 
   const sauvegarder = async (platsData: string[], recoData: any) => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    await supabase.from('menus').delete().eq('user_id', user.id).eq('date_menu', new Date().toISOString().split('T')[0])
-    const { data: menu } = await supabase.from('menus').insert({ user_id: user.id, plats: platsData, date_menu: new Date().toISOString().split('T')[0] }).select().single()
-    if (menu) {
-      await supabase.from('recommandations').insert({ user_id: user.id, menu_id: menu.id, accords: recoData.accords || [], alertes_stock: recoData.alertes_stock || [], a_valoriser: recoData.a_valoriser || [] })
-      setSavedMsg('Accords sauvegardés — disponibles sur le dashboard')
-    }
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data: menu } = await supabase.from('menus').insert({
+    user_id: user.id,
+    plats: platsData,
+    nom_menu: nomMenuInput.trim() || null,
+    date_menu: new Date().toISOString().split('T')[0],
+  }).select().single()
+  if (menu) {
+    await supabase.from('recommandations').insert({
+      user_id: user.id,
+      menu_id: menu.id,
+      accords: recoData.accords || [],
+      alertes_stock: recoData.alertes_stock || [],
+      a_valoriser: recoData.a_valoriser || [],
+      type_service: typeService,
+    })
+    setSavedMsg(nomMenuInput.trim()
+      ? `"${nomMenuInput.trim()}" sauvegardé dans l'historique`
+      : 'Accords sauvegardés dans l\'historique'
+    )
+    setMenuSavedMsg('')
   }
+}
 
   const ajouterPlat = () => setPlats([...plats, ''])
   const updatePlat = (i: number, v: string) => { const p = [...plats]; p[i] = v; setPlats(p) }
@@ -722,6 +740,52 @@ const getFiltre = (type: string, cat: string) =>
     <span style={{ fontSize: 12, color: ISP.muted, fontWeight: 700 }}>Priorité aux références de ma cave</span>
   </div>
 </div>
+      {/* Nom du service */}
+{plats.length > 0 && (
+  <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+    <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: ISP.muted }}>
+      Nom du service *
+    </div>
+    <input
+      type="text"
+      value={nomMenuInput}
+      onChange={e => setNomMenuInput(e.target.value)}
+      placeholder="ex : Menu du soir — Mardi 10 juin"
+      style={{
+        width: '100%', padding: '10px 14px', borderRadius: 10,
+        border: `1.5px solid ${ISP.rule}`, fontFamily: 'inherit',
+        fontSize: 13.5, color: ISP.ink, background: ISP.paperWarm,
+        outline: 'none', boxSizing: 'border-box' as const,
+      }}
+      onFocus={e => (e.target as HTMLInputElement).style.borderColor = ISP.burgundy}
+      onBlur={e => (e.target as HTMLInputElement).style.borderColor = ISP.rule}
+    />
+  </div>
+)}
+
+{/* Sélecteur type de service */}
+{plats.length > 0 && (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <span style={{ fontSize: 11, fontWeight: 700, color: ISP.muted, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Service</span>
+    {([
+      { val: 'verre', label: '🍷 Au verre' },
+      { val: 'bouteille', label: '🍾 À la bouteille' },
+      { val: 'carte', label: '📋 À la carte' },
+    ] as const).map(({ val, label }) => (
+      <button key={val} type="button" onClick={() => setTypeService(val)}
+        style={{
+          padding: '5px 12px', borderRadius: 999,
+          border: `1.5px solid ${typeService === val ? ISP.burgundy : ISP.rule}`,
+          background: typeService === val ? '#F5E6E8' : 'transparent',
+          color: typeService === val ? ISP.burgundy : ISP.muted,
+          fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+          cursor: 'pointer', transition: 'all .15s',
+        }}>
+        {label}
+      </button>
+    ))}
+  </div>
+)}
       {/* Bouton générer */}
       {plats.length > 0 && (
         <div>
@@ -732,11 +796,16 @@ const getFiltre = (type: string, cat: string) =>
             </span>
             {!loading && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 700, opacity: 0.75 }}>Acte II <ArrowRightIcon size={14} /></span>}
           </button>
-          {savedMsg && (
-            <div style={{ marginTop: 12, padding: '10px 14px', borderRadius: 10, background: ISP.sagePale, color: ISP.sage, fontSize: 13, fontWeight: 700, textAlign: 'center' }}>
-              ✓ {savedMsg}
-            </div>
-          )}
+         {savedMsg && (
+  <div style={{ padding: '10px 14px', borderRadius: 10, background: ISP.sagePale, color: ISP.sage, fontSize: 13, fontWeight: 700, textAlign: 'center' as const, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+    <span>✓</span> {savedMsg}
+    <button
+      onClick={() => router.push('/historique')}
+      style={{ fontSize: 12, fontWeight: 800, color: ISP.sage, background: 'transparent', border: `1px solid ${ISP.sage}`, borderRadius: 8, padding: '3px 10px', cursor: 'pointer', fontFamily: 'inherit' }}>
+      Voir l'historique →
+    </button>
+  </div>
+)}
         </div>
       )}
     </div>
