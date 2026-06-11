@@ -52,6 +52,11 @@ function AlertesStock({ alertes }: { alertes: any[] }) {
 }
 
 export default function Service() {
+  const [modalOpen, setModalOpen] = useState(false)
+const [platModal, setPlatModal] = useState('')
+const [preferenceModal, setPreferenceModal] = useState('')
+const [loadingModal, setLoadingModal] = useState(false)
+const [resultModal, setResultModal] = useState<any>(null)
   const [accords, setAccords] = useState<any[]>([])
   const [alertes, setAlertes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -68,6 +73,40 @@ export default function Service() {
 
   useEffect(() => { chargerAccords() }, [])
 
+  const genererPonctuel = async () => {
+  if (!platModal.trim()) return
+  setLoadingModal(true)
+  setResultModal(null)
+  try {
+    const response = await fetch('/api/recommandations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        plats: [platModal.trim()],
+        stock: [],
+        ton: 'professionnel',
+        parametres: {
+          preference_client: preferenceModal.trim(),
+          mode_ponctuel: true,
+        },
+        type_service: 'verre',
+      }),
+    })
+    const data = await response.json()
+    if (data.success && data.data.accords?.[0]) {
+      setResultModal(data.data.accords[0])
+    }
+  } catch { console.error('Erreur génération ponctuelle') }
+  setLoadingModal(false)
+}
+
+const fermerModal = () => {
+  setModalOpen(false)
+  setPlatModal('')
+  setPreferenceModal('')
+  setResultModal(null)
+}
+  
   const chargerAccords = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/connexion'); return }
