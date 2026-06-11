@@ -107,7 +107,7 @@ function Step({ n, title, children }: { n: string; title: string; children: Reac
   )
 }
 function AlertesStock({ alertes }: { alertes: any[] }) {
-  const [open, setOpen] = useState(false)
+  
   return (
     <div style={{ background: '#FFF7E0', border: `1.5px solid #EEA300`, borderRadius: 14, marginBottom: 22, overflow: 'hidden' }}>
       <button
@@ -1009,8 +1009,7 @@ setLoading(false)
           </div>
         </>
       )}
-        </>
-      )}
+      
       <Footer />
     </main>
     </>
