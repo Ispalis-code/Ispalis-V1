@@ -51,6 +51,7 @@ function AlertesStock({ alertes }: { alertes: any[] }) {
   )
 }
 
+
 export default function Service() {
   const [modalOpen, setModalOpen] = useState(false)
 const [platModal, setPlatModal] = useState('')
