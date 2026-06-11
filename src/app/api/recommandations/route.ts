@@ -77,6 +77,10 @@ const buildContraintes = (p: any): string => {
   return `\n\nCONTRAINTES DE GENERATION (A RESPECTER IMPERATIVEMENT — ne pas ignorer) :\n${lines.map((l: string) => `- ${l}`).join('\n')}`
 }
 
+const preferenceClient = parametres?.preference_client
+  ? `\nPRÉFÉRENCE CLIENT : ${parametres.preference_client} — respecte ABSOLUMENT cette contrainte en priorité.`
+  : ''
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -169,7 +173,7 @@ Structure exacte pour UN seul plat — les 3 niveaux sont des alternatives sans 
         system: systemPrompt,
         messages: [{
           role: "user",
-          content: `STOCK:\n${stockText}${contraintes}\n\nPLAT: ${plat}\nTON: ${ton || "professionnel"}`
+          content: `STOCK:\n${stockText}${contraintes}${preferenceClient}\n\nPLAT: ${plat}\nTON: ${ton || "professionnel"}`
         }],
       });
       const raw = message.content.map((b: any) => b.type === "text" ? b.text : "").join("");
