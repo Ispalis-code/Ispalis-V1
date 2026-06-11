@@ -279,6 +279,8 @@ export default function Dashboard() {
   const [plats, setPlats] = useState(['', '', '', '', ''])
   const [stock, setStock] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [etapes, setEtapes] = useState<{label: string, done: boolean}[]>([])
+const [progression, setProgression] = useState(0)
   const [resultats, setResultats] = useState<any>(null)
   const [erreur, setErreur] = useState('')
   const [typeService, setTypeService] = useState<'verre' | 'bouteille' | 'carte'>('verre')
@@ -421,7 +423,31 @@ const supprimerMenuSauvegarde = async (id: string, e: React.MouseEvent) => {
   await supabase.from('menus').delete().eq('id', id)
   await chargerMenusSauvegardes()
 }
+const animerEtapes = async () => {
+  const steps = [
+    'Analyse des plats…',
+    'Consultation de votre cave…',
+    'Génération des accords…',
+    'Finalisation…',
+  ]
+  setEtapes(steps.map(label => ({ label, done: false })))
+  setProgression(0)
 
+  for (let i = 0; i < steps.length; i++) {
+    await new Promise(r => setTimeout(r, i === steps.length - 1 ? 99999 : 800 + i * 200))
+    setEtapes(prev => prev.map((e, idx) => idx === i ? { ...e, done: true } : e))
+    setProgression(Math.round(((i + 1) / steps.length) * 85))
+  }
+}
+  const stopAnimation = () => {
+  setEtapes(prev => prev.map(e => ({ ...e, done: true })))
+  setProgression(100)
+  setTimeout(() => {
+    setEtapes([])
+    setProgression(0)
+  }, 600)
+}
+  
 const genererAccordsBouteille = async () => {
   const platsRemplis = plats.filter(p => p.trim())
   if (platsRemplis.length === 0) return
@@ -470,6 +496,7 @@ const genererAccordsBouteille = async () => {
   setLoading(true)
   setErreur('')
   setResultats(null)
+  animerEtapes()
   try {
     const stockFormatted = stock.map(s => ({
       nom: `${s.nom_reference} ${s.millesime || ''}`.trim(),
@@ -521,7 +548,9 @@ const genererAccordsBouteille = async () => {
       setErreur('Erreur lors de la génération')
     }
   } catch { setErreur('Erreur réseau') }
-  setLoading(false)
+  stopAnimation()
+await new Promise(r => setTimeout(r, 650))
+setLoading(false)
 }
   const filledCount = plats.filter(p => p.trim()).length
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long' })
@@ -834,15 +863,65 @@ const genererAccordsBouteille = async () => {
       )}
     </section>
   ) : loading ? (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 300, gap: 16 }}>
-      <BottleI color={ISP.burgundy} size={48} />
-      <div style={{ fontSize: 15, fontWeight: 700, color: ISP.burgundy }}>Génération en cours…</div>
-      <div style={{ fontSize: 13, color: ISP.muted }}>15 à 45 secondes selon le nombre de plats</div>
+    <div style={{ background: ISP.card, borderRadius: 18, padding: '32px 36px', boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)', display: 'flex', flexDirection: 'column' as const, gap: 24 }}>
+      {/* Barre de progression */}
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: ISP.terracotta }}>
+            Génération en cours
+          </span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: ISP.muted }}>{progression}%</span>
+        </div>
+        <div style={{ height: 6, borderRadius: 999, background: ISP.rule, overflow: 'hidden' }}>
+          <div style={{
+            height: '100%', borderRadius: 999,
+            background: `linear-gradient(90deg, ${ISP.burgundy}, ${ISP.terracotta})`,
+            width: `${progression}%`,
+            transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+          }} />
+        </div>
+      </div>
+      {/* Étapes */}
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
+        {etapes.map((etape, i) => {
+          const isActive = !etape.done && etapes.slice(0, i).every(e => e.done)
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: etape.done || isActive ? 1 : 0.3, transition: 'opacity 0.4s' }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: etape.done ? ISP.sage : isActive ? ISP.ochre : ISP.rule,
+                transition: 'background 0.4s',
+              }}>
+                {etape.done ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : isActive ? (
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: ISP.burgundy, animation: 'pulse 1s ease-in-out infinite' }} />
+                ) : (
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: ISP.muted }} />
+                )}
+              </div>
+              <span style={{ fontSize: 14, fontWeight: etape.done || isActive ? 700 : 500, color: etape.done ? ISP.sage : isActive ? ISP.ink : ISP.muted, transition: 'color 0.4s' }}>
+                {etape.label}
+              </span>
+            </div>
+          )
+        })}
+      </div>
     </div>
   ) : null
 
   return (
-    <main style={{ background: ISP.paper, minHeight: '100vh', color: ISP.ink }}>
+    <>
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.8); }
+        }
+      `}</style>
+      <main style={{ background: ISP.paper, minHeight: '100vh', color: ISP.ink }}>
       {/* Nav */}
       <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 44px', borderBottom: `1px solid ${ISP.rule}`, background: ISP.paper, position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ cursor: 'pointer' }} onClick={() => router.push('/dashboard')}>
@@ -932,5 +1011,6 @@ const genererAccordsBouteille = async () => {
       )}
       <Footer />
     </main>
+    </>
   )
 }
