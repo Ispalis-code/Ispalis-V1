@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Footer from '@/components/Footer'
 import Tooltip from '@/components/Tooltip';
 import PrintAccords from '@/components/PrintAccords'
-)
+
 const ISP = {
   burgundy: '#5E1119',
   burgundyDeep: '#3F0B11',
@@ -1007,6 +1007,8 @@ setLoading(false)
               </div>
             </aside>
           </div>
+        </>
+      )}
         </>
       )}
       <Footer />
