@@ -46,6 +46,7 @@ export default function PrintAccords({ accords, accordBouteille, nomRestaurant }
     accordBouteille: !!accordBouteille,
     logoIspalis: true,
   })
+  const [commentaire, setCommentaire] = useState('')
 
   const toggle = (key: keyof PrintOptions) => {
     setOptions(prev => ({ ...prev, [key]: !prev[key] }))
@@ -176,7 +177,12 @@ export default function PrintAccords({ accords, accordBouteille, nomRestaurant }
           <span>Accords mets-boissons</span>
           <span style="flex:1; height:1.5px; background:${ISP.terracotta}40;"></span>
         </div>
-
+${commentaire.trim() ? `
+  <div style="margin-bottom:20px; padding:14px 18px; background:${ISP.paperWarm}; border-radius:10px; border-left:3px solid ${ISP.terracotta};">
+    <div style="font-size:9px; font-weight:800; color:${ISP.terracotta}; text-transform:uppercase; letter-spacing:0.12em; margin-bottom:6px;">Commentaire</div>
+    <div style="font-size:13px; color:${ISP.ink}; font-style:italic; line-height:1.5;">${commentaire.trim()}</div>
+  </div>
+` : ''}
         <!-- Accords -->
         ${accordsHTML}
 
@@ -279,7 +285,27 @@ export default function PrintAccords({ accords, accordBouteille, nomRestaurant }
             )}
             <CheckBox label="Logo Ispalis" checked={options.logoIspalis} onChange={() => toggle('logoIspalis')} />
           </div>
-
+      {/* Commentaire personnalisé */}
+<div style={{ gridColumn: '1 / -1', marginTop: 4 }}>
+  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: ISP.muted, marginBottom: 6 }}>
+    Commentaire personnalisé
+  </div>
+  <textarea
+    value={commentaire}
+    onChange={e => setCommentaire(e.target.value)}
+    placeholder="ex : Accords proposés par notre équipe ce soir…"
+    rows={2}
+    style={{
+      width: '100%', padding: '10px 12px', borderRadius: 10,
+      border: `1.5px solid ${ISP.rule}`, fontFamily: 'inherit',
+      fontSize: 13, color: ISP.ink, background: ISP.paperWarm,
+      outline: 'none', resize: 'none', boxSizing: 'border-box' as const,
+      transition: 'border-color .15s',
+    }}
+    onFocus={e => (e.target as HTMLTextAreaElement).style.borderColor = ISP.burgundy}
+    onBlur={e => (e.target as HTMLTextAreaElement).style.borderColor = ISP.rule}
+  />
+</div>
           <button
             onClick={genererEtImprimer}
             style={{
