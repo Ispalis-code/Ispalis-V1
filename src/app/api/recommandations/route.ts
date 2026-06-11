@@ -77,15 +77,15 @@ const buildContraintes = (p: any): string => {
   return `\n\nCONTRAINTES DE GENERATION (A RESPECTER IMPERATIVEMENT — ne pas ignorer) :\n${lines.map((l: string) => `- ${l}`).join('\n')}`
 }
 
-const preferenceClient = parametres?.preference_client
-  ? `\nPRÉFÉRENCE CLIENT : ${parametres.preference_client} — respecte ABSOLUMENT cette contrainte en priorité.`
-  : ''
+
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { plats, stock, ton, parametres, type_service, mode} = body;
-
+const preferenceClient = parametres?.preference_client
+  ? `\nPRÉFÉRENCE CLIENT : ${parametres.preference_client} — respecte ABSOLUMENT cette contrainte en priorité.`
+  : ''
     if (!plats || plats.length === 0) {
       return NextResponse.json({ error: "Aucun plat fourni" }, { status: 400 });
     }
