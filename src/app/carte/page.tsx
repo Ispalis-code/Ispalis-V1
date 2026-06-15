@@ -443,7 +443,8 @@ const getFiltre = (type: string, cat: string) =>
         await sauvegarder(platsRemplis, data.data)
       }
     } catch { console.error('Erreur génération') }
-    stopAnimation() + await new Promise(r => setTimeout(r, 650))
+    stopAnimation()
+  await new Promise(r => setTimeout(r, 650))
    setLoading(false)
   }
 
