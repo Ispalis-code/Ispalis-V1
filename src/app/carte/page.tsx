@@ -907,11 +907,7 @@ const getFiltre = (type: string, cat: string) =>
       })}
     </div>
   </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400, gap: 16 }}>
-          <BottleI color={ISP.burgundy} size={52} />
-          <div style={{ fontSize: 16, fontWeight: 800, color: ISP.burgundy }}>Génération en cours…</div>
-          <div style={{ fontSize: 13, color: ISP.muted }}>15 à 45 secondes selon le nombre de plats</div>
-        </div>
+        
       ) : (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 800, color: ISP.terracotta, marginBottom: 20 }}>
