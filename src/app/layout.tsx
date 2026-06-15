@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   title: "·ispalis· — Accords mets-vins pour restaurateurs",
   description:
     "Composez votre carte du jour, Ispalis génère les accords mets-boissons en piochant d'abord dans votre cave.",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
