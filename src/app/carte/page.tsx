@@ -1105,5 +1105,6 @@ const getFiltre = (type: string, cat: string) =>
   </div>
 )}
     </main>
+   </>
   )
 }
