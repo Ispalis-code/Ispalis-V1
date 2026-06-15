@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Fond blanc -->
+  <rect width="64" height="64" rx="12" fill="#FFFCF6"/>
+  
+  <!-- Point gauche jaune -->
+  <circle cx="12" cy="32" r="6" fill="#EEA300"/>
+  
+  <!-- Lettre I bordeaux -->
+  <text x="32" y="44" text-anchor="middle" font-family="Georgia, serif" font-size="38" font-weight="800" fill="#5E1119">I</text>
+  
+  <!-- Point droit jaune -->
+  <circle cx="52" cy="32" r="6" fill="#EEA300"/>
+</svg>
