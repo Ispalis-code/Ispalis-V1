@@ -275,17 +275,54 @@ export default function Carte() {
   const [accords, setAccords] = useState<any[]>([])
   const [alertes, setAlertes] = useState<any[]>([])
   const [savedMsg, setSavedMsg] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [platModal, setPlatModal] = useState('')
+  const [preferenceModal, setPreferenceModal] = useState('')
+  const [loadingModal, setLoadingModal] = useState(false)
+  const [resultModal, setResultModal] = useState<any>(null)
   const [nomMenuInput, setNomMenuInput] = useState('')
-const [menuSavedMsg, setMenuSavedMsg] = useState('')
-const [typeService, setTypeService] = useState<'verre' | 'bouteille' | 'carte'>('carte')
- const [parametres, setParametres] = useState({
+  const [menuSavedMsg, setMenuSavedMsg] = useState('')
+  const [typeService, setTypeService] = useState<'verre' | 'bouteille' | 'carte'>('carte')
+  const [parametres, setParametres] = useState({
   types: ['vin'] as string[],
   filtres: {} as Record<string, string[]>,
   budget: 'les trois niveaux',
   cave_priorite: true,
 })
 const [ongletActif, setOngletActif] = useState('vin')
+const genererPonctuel = async () => {
+  if (!platModal.trim()) return
+  setLoadingModal(true)
+  setResultModal(null)
+  try {
+    const response = await fetch('/api/recommandations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        plats: [platModal.trim()],
+        stock: [],
+        ton: 'professionnel',
+        parametres: {
+          preference_client: preferenceModal.trim(),
+          mode_ponctuel: true,
+        },
+        type_service: 'verre',
+      }),
+    })
+    const data = await response.json()
+    if (data.success && data.data.accords?.[0]) {
+      setResultModal(data.data.accords[0])
+    }
+  } catch { console.error('Erreur génération ponctuelle') }
+  setLoadingModal(false)
+}
 
+const fermerModal = () => {
+  setModalOpen(false)
+  setPlatModal('')
+  setPreferenceModal('')
+  setResultModal(null)
+}
 const toggleType = (val: string) => {
   setParametres(prev => {
     const next = prev.types.includes(val)
@@ -920,7 +957,95 @@ const getFiltre = (type: string, cat: string) =>
           </div>
         </>
       )}
+      
         <Footer />
+      {/* Bouton flottant */}
+<button
+  onClick={() => setModalOpen(true)}
+  style={{
+    position: 'fixed', bottom: 100, right: 24,
+    width: 56, height: 56, borderRadius: '50%',
+    background: ISP.burgundy, color: ISP.card,
+    border: 'none', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    boxShadow: '0 4px 20px rgba(94,17,25,.45)',
+    fontSize: 22, zIndex: 50,
+    transition: 'transform .15s',
+  }}
+  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)' }}
+  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)' }}
+>
+  <span suppressHydrationWarning>✨</span>
+</button>
+
+{/* Modal */}
+{modalOpen && (
+  <div onClick={fermerModal} style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(26,20,16,0.6)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+    <div onClick={e => e.stopPropagation()} style={{ background: ISP.card, borderRadius: '20px 20px 0 0', padding: '28px 24px 40px', width: '100%', maxWidth: 540, display: 'flex', flexDirection: 'column' as const, gap: 16, boxShadow: '0 -8px 40px rgba(60,40,20,.25)' }}>
+
+      <div style={{ width: 36, height: 4, borderRadius: 999, background: ISP.rule, margin: '0 auto -8px' }} />
+
+      <div style={{ paddingBottom: 12, borderBottom: `1.5px solid ${ISP.rule}` }}>
+        <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: ISP.terracotta, fontWeight: 800 }}>Accord sur demande</div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: ISP.ink, marginTop: 4, letterSpacing: '-0.01em' }}>Générer pour un client</div>
+      </div>
+
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: ISP.muted, marginBottom: 6 }}>Plat</div>
+        <input type="text" value={platModal} onChange={e => setPlatModal(e.target.value)} placeholder="ex : Magret de canard sauce cerise" autoFocus onKeyDown={e => e.key === 'Enter' && genererPonctuel()}
+          style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: `1.5px solid ${ISP.rule}`, fontFamily: 'inherit', fontSize: 15, color: ISP.ink, background: ISP.paperWarm, outline: 'none', boxSizing: 'border-box' as const }}
+          onFocus={e => (e.target as HTMLInputElement).style.borderColor = ISP.burgundy}
+          onBlur={e => (e.target as HTMLInputElement).style.borderColor = ISP.rule}
+        />
+      </div>
+
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: ISP.muted, marginBottom: 6 }}>
+          Préférence client <span style={{ fontWeight: 500, textTransform: 'none' as const, fontSize: 11 }}>(optionnel)</span>
+        </div>
+        <input type="text" value={preferenceModal} onChange={e => setPreferenceModal(e.target.value)} placeholder="ex : Bordeaux, blanc sec, sans alcool…" onKeyDown={e => e.key === 'Enter' && genererPonctuel()}
+          style={{ width: '100%', padding: '12px 14px', borderRadius: 10, border: `1.5px solid ${ISP.rule}`, fontFamily: 'inherit', fontSize: 15, color: ISP.ink, background: ISP.paperWarm, outline: 'none', boxSizing: 'border-box' as const }}
+          onFocus={e => (e.target as HTMLInputElement).style.borderColor = ISP.burgundy}
+          onBlur={e => (e.target as HTMLInputElement).style.borderColor = ISP.rule}
+        />
+      </div>
+
+      <button onClick={genererPonctuel} disabled={loadingModal || !platModal.trim()}
+        style={{ background: loadingModal || !platModal.trim() ? ISP.muted : ISP.burgundy, color: ISP.card, border: 'none', borderRadius: 12, padding: '15px 20px', fontFamily: 'inherit', fontWeight: 800, fontSize: 15, cursor: loadingModal || !platModal.trim() ? 'not-allowed' : 'pointer', transition: 'all .2s' }}>
+        {loadingModal ? 'Génération…' : '✨ Générer l\'accord'}
+      </button>
+
+      {resultModal && (
+        <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${ISP.rule}` }}>
+          <div style={{ background: ISP.burgundy, padding: '14px 18px' }}>
+            <div style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase' as const, fontWeight: 800, color: ISP.ochre }}>{resultModal.plat}</div>
+          </div>
+          <div style={{ background: ISP.card, padding: '16px 18px', display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
+            {[
+              { label: 'Accessible', data: resultModal.accord_accessible, color: ISP.sage },
+              { label: 'Intermédiaire', data: resultModal.accord_intermediaire, color: ISP.terracotta },
+              { label: 'Prestige', data: resultModal.accord_prestige, color: ISP.burgundy },
+            ].map(({ label, data, color }) => data?.vin && (
+              <div key={label} style={{ paddingBottom: 12, borderBottom: `1px dashed ${ISP.rule}` }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color, textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 4 }}>{label}</div>
+                <div style={{ fontWeight: 800, fontSize: 15, color: ISP.ink }}>{data.vin}</div>
+                <div style={{ fontSize: 12, color: ISP.muted, marginTop: 2 }}>🍷 {data.prix_verre} · 🍾 {data.prix_bouteille}</div>
+                <div style={{ fontSize: 13, fontStyle: 'italic', color: ISP.ink, marginTop: 6, lineHeight: 1.4 }}>« {data.argument} »</div>
+              </div>
+            ))}
+            {resultModal.accord_sans_alcool && (
+              <div style={{ background: ISP.sagePale, borderRadius: 10, padding: '12px 14px', borderLeft: `3px solid ${ISP.sage}` }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: ISP.sage, textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 4 }}>Sans alcool</div>
+                <div style={{ fontWeight: 800, fontSize: 14, color: ISP.ink }}>{resultModal.accord_sans_alcool.boisson}</div>
+                <div style={{ fontSize: 12, fontStyle: 'italic', color: ISP.muted, marginTop: 4 }}>« {resultModal.accord_sans_alcool.argument} »</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+)}
     </main>
   )
 }
