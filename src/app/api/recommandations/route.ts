@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { plats, stock, ton, parametres, type_service, mode} = body;
+    const stock_verre: any[] = body.stock_verre || []
 const preferenceClient = parametres?.preference_client
   ? `\nPRÉFÉRENCE CLIENT : ${parametres.preference_client} — respecte ABSOLUMENT cette contrainte en priorité.`
   : ''
@@ -140,14 +141,26 @@ content: `STOCK:\n${stockText}\n\nMENU COMPLET:\n${platsLimites.map((p: string, 
 }
     const anneeActuelle = new Date().getFullYear()
 
-const stockText = stock && stock.length > 0
-  ? stock.map((s: any) => {
+// Si mode verre ET carte au verre disponible → utiliser carte_verre, sinon cave complète
+const stockActif = (type_service === 'verre' && stock_verre.length > 0)
+  ? stock_verre
+  : stock
+
+const stockText = stockActif && stockActif.length > 0
+  ? stockActif.map((s: any) => {
       const maturite = s.maturite_debut && anneeActuelle < s.maturite_debut
         ? ` — pas encore à maturité (prêt en ${s.maturite_debut})`
         : ''
-      return `- ${s.nom} — ${s.quantite} bouteilles (${s.jours_sans_mouvement}j)${maturite}`
+      const prixVerre = s.prix_verre ? ` — prix verre : ${s.prix_verre}` : ''
+      return `- ${s.nom} — ${s.quantite || 1} ref (${s.jours_sans_mouvement || 0}j)${maturite}${prixVerre}`
     }).join("\n")
   : "Aucun stock";
+
+const mentionCarteVerre = type_service === 'verre' && stock_verre.length > 0
+  ? `\nATTENTION : Utilise UNIQUEMENT les références de la carte des vins au verre ci-dessus.`
+  : type_service === 'bouteille'
+  ? `\nATTENTION : Utilise UNIQUEMENT les références de la cave (bouteilles) ci-dessus.`
+  : ''
     
     const contraintes = buildContraintes(parametres)
     const isSansAlcool = parametres?.types?.length === 1 && parametres.types[0] === 'sans_alcool'
@@ -173,8 +186,7 @@ Structure exacte pour UN seul plat — les 3 niveaux sont des alternatives sans 
         system: systemPrompt,
         messages: [{
           role: "user",
-          content: `STOCK:\n${stockText}${contraintes}${preferenceClient}\n\nPLAT: ${plat}\nTON: ${ton || "professionnel"}`
-        }],
+        content: `STOCK:\n${stockText}${contraintes}${preferenceClient}${mentionCarteVerre}\n\nPLAT: ${plat}\nTON: ${ton || "professionnel"}`        }],
       });
       const raw = message.content.map((b: any) => b.type === "text" ? b.text : "").join("");
       const clean = raw.replace(/```json|```/g, "").trim();
