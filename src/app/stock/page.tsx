@@ -926,32 +926,7 @@ const importerCarteVerre = async (e: React.ChangeEvent<HTMLInputElement>) => {
             <p style={{ fontSize: 12.5, color: ISP.muted, margin: '0 0 12px', lineHeight: 1.55 }}>
               Formats acceptes : CSV, Excel (.xlsx) — Sommit detecte automatiquement
             </p>
-             </section>
-          
-            {/* ─── Section carte des vins au verre */}
-<section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', border: `1.5px solid ${ISP.rule}` }}>
-  <div style={{ paddingBottom: 12, marginBottom: 16, borderBottom: `2px solid ${ISP.ink}` }}>
-    <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: ISP.terracotta, fontWeight: 800 }}>Méthode 3</div>
-    <h3 style={{ fontSize: 17, fontWeight: 800, margin: '4px 0 4px', letterSpacing: '-0.01em' }}>Carte des vins au verre</h3>
-    <p style={{ fontSize: 12.5, color: ISP.muted, margin: 0, lineHeight: 1.55 }}>
-      Importez votre sélection de vins servis au verre — Ispalis les utilisera en priorité pour les accords "au verre".
-      {carteVerre.length === 0 && <span style={{ color: ISP.sage, fontWeight: 700 }}> Sans cette liste, Ispalis utilisera votre cave complète.</span>}
-    </p>
-  </div>
 
-  {/* Import */}
-  <label style={{ display: 'block', padding: '12px 16px', borderRadius: 10, border: `2px dashed ${importingVerre ? ISP.terracotta : ISP.rule}`, background: importingVerre ? `${ISP.terracotta}10` : ISP.paperWarm, cursor: importingVerre ? 'wait' : 'pointer', textAlign: 'center' as const, transition: 'all .2s', marginBottom: 10 }}>
-    <div style={{ fontSize: 13, fontWeight: 700, color: ISP.ink }}>{importingVerre ? 'Import en cours...' : 'Importer la carte des vins au verre (.xlsx ou .csv)'}</div>
-    <div style={{ fontSize: 11, color: ISP.muted, marginTop: 4 }}>Colonnes attendues : nom, appellation, couleur, millésime, prix verre</div>
-    <input ref={fileRefVerre} type="file" accept=".csv,.xlsx,.xls" onChange={importerCarteVerre} disabled={importingVerre} style={{ display: 'none' }} />
-  </label>
-
-  {importMsgVerre && (
-    <div style={{ padding: '8px 12px', borderRadius: 8, background: importOKVerre ? ISP.sagePale : '#FBE9EB', color: importOKVerre ? ISP.sage : ISP.burgundy, fontSize: 12.5, fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span style={{ width: 16, height: 16, borderRadius: '50%', background: importOKVerre ? ISP.sage : ISP.burgundy, color: '#fff', display: 'grid', placeItems: 'center', fontSize: 10, flexShrink: 0 }}>{importOKVerre ? '✓' : '!'}</span>
-      {importMsgVerre}
-    </div>
-  )}
 
   {/* Liste des références au verre */}
   {carteVerre.length > 0 && (
@@ -1018,10 +993,64 @@ const importerCarteVerre = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 {importMsg}
               </div>
             )}
-          </section>
-        </div>
+         </section>
 
-        <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)', display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+          {/* ─── Méthode 3 : Carte des vins au verre */}
+          <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', border: `1.5px solid ${ISP.rule}` }}>
+            <div style={{ paddingBottom: 12, marginBottom: 16, borderBottom: `2px solid ${ISP.ink}` }}>
+              <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: ISP.terracotta, fontWeight: 800 }}>Méthode 3</div>
+              <h3 style={{ fontSize: 17, fontWeight: 800, margin: '4px 0 4px', letterSpacing: '-0.01em' }}>Carte des vins au verre</h3>
+              <p style={{ fontSize: 12.5, color: ISP.muted, margin: 0, lineHeight: 1.55 }}>
+                Importez votre sélection de vins servis au verre — Ispalis les utilisera en priorité pour les accords "au verre".
+                {carteVerre.length === 0 && <span style={{ color: ISP.sage, fontWeight: 700 }}> Sans cette liste, Ispalis utilisera votre cave complète.</span>}
+              </p>
+            </div>
+            <label style={{ display: 'block', padding: '12px 16px', borderRadius: 10, border: `2px dashed ${importingVerre ? ISP.terracotta : ISP.rule}`, background: importingVerre ? `${ISP.terracotta}10` : ISP.paperWarm, cursor: importingVerre ? 'wait' : 'pointer', textAlign: 'center' as const, transition: 'all .2s', marginBottom: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: ISP.ink }}>{importingVerre ? 'Import en cours...' : 'Importer la carte des vins au verre (.xlsx ou .csv)'}</div>
+              <div style={{ fontSize: 11, color: ISP.muted, marginTop: 4 }}>Colonnes attendues : nom, appellation, couleur, millésime, prix verre</div>
+              <input ref={fileRefVerre} type="file" accept=".csv,.xlsx,.xls" onChange={importerCarteVerre} disabled={importingVerre} style={{ display: 'none' }} />
+            </label>
+            {importMsgVerre && (
+              <div style={{ padding: '8px 12px', borderRadius: 8, background: importOKVerre ? ISP.sagePale : '#FBE9EB', color: importOKVerre ? ISP.sage : ISP.burgundy, fontSize: 12.5, fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 16, height: 16, borderRadius: '50%', background: importOKVerre ? ISP.sage : ISP.burgundy, color: '#fff', display: 'grid', placeItems: 'center', fontSize: 10, flexShrink: 0 }}>{importOKVerre ? '✓' : '!'}</span>
+                {importMsgVerre}
+              </div>
+            )}
+            {carteVerre.length > 0 && (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: ISP.muted }}>{carteVerre.length} référence{carteVerre.length > 1 ? 's' : ''} au verre</div>
+                  <button onClick={viderCarteVerre} style={{ fontSize: 11.5, fontWeight: 700, color: ISP.muted, background: 'transparent', border: `1px solid ${ISP.rule}`, borderRadius: 8, padding: '4px 10px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                    <TrashIcon size={11} /> Vider
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6, maxHeight: 280, overflowY: 'auto' }}>
+                  {carteVerre.map((ref: any) => (
+                    <div key={ref.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 10, background: ISP.paperWarm, border: `1px solid ${ISP.rule}` }}>
+                      <BottleI color={couleurDuVin(ref.couleur)} size={20} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 800, color: ISP.ink }}>{ref.nom_reference} {ref.millesime ? `· ${ref.millesime}` : ''}</div>
+                        <div style={{ fontSize: 11.5, color: ISP.muted }}>{ref.appellation}{ref.prix_verre ? ` · 🍷 ${ref.prix_verre}` : ''}</div>
+                      </div>
+                      <button onClick={() => supprimerCarteVerreRef(ref.id)} style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'transparent', color: ISP.muted, cursor: 'pointer', display: 'grid', placeItems: 'center' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${ISP.burgundy}15`; (e.currentTarget as HTMLButtonElement).style.color = ISP.burgundy }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = ISP.muted }}>
+                        <TrashIcon size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {carteVerre.length === 0 && !importingVerre && (
+              <div style={{ padding: '20px', borderRadius: 12, background: ISP.paperWarm, textAlign: 'center' as const, color: ISP.muted, fontSize: 13 }}>
+                Aucune référence au verre — Ispalis utilisera votre cave complète pour les accords au verre.
+              </div>
+            )}
+          </section>
+
+        </div>
+        <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', boxShadow:
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' as const, paddingBottom: 12, borderBottom: `2px solid ${ISP.ink}` }}>
             <div>
               <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: ISP.terracotta, fontWeight: 800 }}>{references.length} reference{references.length > 1 ? 's' : ''}</div>
