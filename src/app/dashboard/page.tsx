@@ -336,12 +336,12 @@ useEffect(() => { chargerStock(); chargerMenusSauvegardes() }, [])
     if (!user) { router.push('/connexion'); return }
     const { data } = await supabase.from('stocks').select('*').eq('user_id', user.id)
     if (data) setStock(data)
-  }
-  const { data: carteVerreData } = await supabase
+    const { data: carteVerreData } = await supabase
   .from('carte_verre')
   .select('*')
   .eq('user_id', user.id)
 if (carteVerreData) setCarteVerre(carteVerreData)
+  }
   const chargerMenusSauvegardes = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
