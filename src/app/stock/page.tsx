@@ -1015,7 +1015,7 @@ const importerCarteVerre = async (e: React.ChangeEvent<HTMLInputElement>) => {
           </section>
 
         </div>
-        <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', boxShadow:
+        <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', boxShadow: '0 1px 0 rgba(60,40,20,.04), 0 12px 32px -16px rgba(60,40,20,.18)', display: 'flex', flexDirection: 'column' as const, gap: 14, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' as const, paddingBottom: 12, borderBottom: `2px solid ${ISP.ink}` }}>
             <div>
               <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: ISP.terracotta, fontWeight: 800 }}>{references.length} reference{references.length > 1 ? 's' : ''}</div>
