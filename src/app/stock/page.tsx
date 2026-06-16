@@ -993,7 +993,7 @@ const importerCarteVerre = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 {importMsg}
               </div>
             )}
-         </section>
+</section>
 
           {/* ─── Méthode 3 : Carte des vins au verre */}
           <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', border: `1.5px solid ${ISP.rule}` }}>
