@@ -926,6 +926,8 @@ const importerCarteVerre = async (e: React.ChangeEvent<HTMLInputElement>) => {
             <p style={{ fontSize: 12.5, color: ISP.muted, margin: '0 0 12px', lineHeight: 1.55 }}>
               Formats acceptes : CSV, Excel (.xlsx) — Sommit detecte automatiquement
             </p>
+             </section>
+          
             {/* ─── Section carte des vins au verre */}
 <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', border: `1.5px solid ${ISP.rule}` }}>
   <div style={{ paddingBottom: 12, marginBottom: 16, borderBottom: `2px solid ${ISP.ink}` }}>
