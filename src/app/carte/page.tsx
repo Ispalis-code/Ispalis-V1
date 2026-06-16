@@ -268,6 +268,7 @@ function AccordCard({ label, data, color, stock }: {
 export default function Carte() {
   const [plats, setPlats] = useState<string[]>([])
   const [stock, setStock] = useState<any[]>([])
+  const [carteVerre, setCarteVerre] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [importingPDF, setImportingPDF] = useState(false)
   const [importMsg, setImportMsg] = useState('')
@@ -388,6 +389,11 @@ const getFiltre = (type: string, cat: string) =>
         setAlertes(recoData.alertes_stock || [])
       }
     }
+    const { data: carteVerreData } = await supabase
+  .from('carte_verre')
+  .select('*')
+  .eq('user_id', user.id)
+if (carteVerreData) setCarteVerre(carteVerreData)
   }
 
   const importerPDF = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -434,8 +440,21 @@ const getFiltre = (type: string, cat: string) =>
       const res = await fetch('/api/recommandations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plats: platsRemplis.slice(0, 8), stock: stockFormatted, ton: 'professionnel' , parametres })
-      })
+body: JSON.stringify({
+  plats: platsRemplis.slice(0, 8),
+  stock: stockFormatted,
+  stock_verre: typeService === 'verre'
+    ? carteVerre.map(s => ({
+        nom: `${s.nom_reference} ${s.millesime || ''}`.trim(),
+        quantite: 1,
+        jours_sans_mouvement: 0,
+        prix_verre: s.prix_verre,
+      }))
+    : [],
+  ton: 'professionnel',
+  parametres,
+  type_service: typeService,
+})      })
       const data = await res.json()
       if (data.success) {
         setAccords(data.data.accords || [])
