@@ -928,61 +928,26 @@ const importerCarteVerre = async (e: React.ChangeEvent<HTMLInputElement>) => {
             </p>
 
 
-  {/* Liste des références au verre */}
-  {carteVerre.length > 0 && (
-    <>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: ISP.muted }}>
-          {carteVerre.length} référence{carteVerre.length > 1 ? 's' : ''} au verre
-        </div>
-        <button onClick={viderCarteVerre} style={{ fontSize: 11.5, fontWeight: 700, color: ISP.muted, background: 'transparent', border: `1px solid ${ISP.rule}`, borderRadius: 8, padding: '4px 10px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-          <TrashIcon size={11} /> Vider
-        </button>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6, maxHeight: 280, overflowY: 'auto' }}>
-        {carteVerre.map((ref: any) => (
-          <div key={ref.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 10, background: ISP.paperWarm, border: `1px solid ${ISP.rule}` }}>
-            <BottleI color={couleurDuVin(ref.couleur)} size={20} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 800, color: ISP.ink }}>{ref.nom_reference} {ref.millesime ? `· ${ref.millesime}` : ''}</div>
-              <div style={{ fontSize: 11.5, color: ISP.muted }}>{ref.appellation}{ref.prix_verre ? ` · 🍷 ${ref.prix_verre}` : ''}</div>
-            </div>
-            <button onClick={() => supprimerCarteVerreRef(ref.id)} style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'transparent', color: ISP.muted, cursor: 'pointer', display: 'grid', placeItems: 'center' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${ISP.burgundy}15`; (e.currentTarget as HTMLButtonElement).style.color = ISP.burgundy }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = ISP.muted }}>
-              <TrashIcon size={13} />
-            </button>
-          </div>
-        ))}
-      </div>
-    </>
-  )}
-
-  {carteVerre.length === 0 && !importingVerre && (
-    <div style={{ padding: '20px', borderRadius: 12, background: ISP.paperWarm, textAlign: 'center' as const, color: ISP.muted, fontSize: 13 }}>
-      Aucune référence au verre — Ispalis utilisera votre cave complète pour les accords au verre.
-    </div>
-  )}
-</section>
-            {/* Bouton télécharger template */}
-<a
-  href="/ispalis_template.xlsx"
-    download="ispalis_template.xlsx"
-    style={{
-      display: 'inline-flex', alignItems: 'center', gap: 8,
-      padding: '9px 14px', borderRadius: 10, marginBottom: 12,
-      background: ISP.sagePale, color: ISP.sage,
-      border: `1px solid ${ISP.sage}40`,
-      fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700,
-      textDecoration: 'none' as const, transition: 'all .15s',
-  }}>
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="7 10 12 15 17 10" />
-    <line x1="12" y1="15" x2="12" y2="3" />
-  </svg>
-  Télécharger le template Excel
-</a>
+ 
+           {/* Bouton télécharger template */}
+            
+              href="/ispalis_template.xlsx"
+              download="ispalis_template.xlsx"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                padding: '9px 14px', borderRadius: 10, marginBottom: 12,
+                background: ISP.sagePale, color: ISP.sage,
+                border: `1px solid ${ISP.sage}40`,
+                fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700,
+                textDecoration: 'none' as const, transition: 'all .15s',
+              }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Télécharger le template Excel
+            </a>
             <label style={{ display: 'block', padding: '14px 16px', borderRadius: 10, border: `2px dashed ${importing ? ISP.terracotta : ISP.rule}`, background: importing ? `${ISP.terracotta}10` : ISP.paperWarm, cursor: importing ? 'wait' : 'pointer', textAlign: 'center' as const, transition: 'all .2s' }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: ISP.ink }}>{importing ? 'Import en cours...' : 'Cliquez pour choisir un fichier .csv ou .xlsx'}</div>
               <input ref={fileRef} type="file" accept=".csv,.txt,.xlsx,.xls" onChange={importerCSV} disabled={importing} style={{ display: 'none' }} />
@@ -993,7 +958,7 @@ const importerCarteVerre = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 {importMsg}
               </div>
             )}
-</section>
+          </section>
 
           {/* ─── Méthode 3 : Carte des vins au verre */}
           <section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', border: `1.5px solid ${ISP.rule}` }}>
