@@ -22,7 +22,7 @@ const ISP = {
   rule: '#E2D8C2',
   muted: '#7A6A55',
 }
-
+const [carteVerre, setCarteVerre] = useState<any[]>([])
 const SAMPLE_DISHES = [
   'Magret de canard aux cerises',
   'Risotto aux champignons des bois',
@@ -337,6 +337,11 @@ useEffect(() => { chargerStock(); chargerMenusSauvegardes() }, [])
     const { data } = await supabase.from('stocks').select('*').eq('user_id', user.id)
     if (data) setStock(data)
   }
+  const { data: carteVerreData } = await supabase
+  .from('carte_verre')
+  .select('*')
+  .eq('user_id', user.id)
+if (carteVerreData) setCarteVerre(carteVerreData)
   const chargerMenusSauvegardes = async () => {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
@@ -465,11 +470,20 @@ const genererAccordsBouteille = async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        plats: platsRemplis,
-        stock: stockFormatted,
-        ton: 'professionnel',
-        mode: 'bouteille_menu',
-      }),
+  plats: platsRemplis,
+  stock: stockFormatted,
+  stock_verre: typeService === 'verre'
+    ? carteVerre.map(s => ({
+        nom: `${s.nom_reference} ${s.millesime || ''}`.trim(),
+        quantite: 1,
+        jours_sans_mouvement: 0,
+        prix_verre: s.prix_verre,
+      }))
+    : [],
+  ton: 'professionnel',
+  parametres,
+  type_service: typeService,
+}),
     })
     const data = await response.json()
     if (data.success) setAccordBouteille(data.data.accord_bouteille)
