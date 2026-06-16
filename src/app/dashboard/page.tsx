@@ -22,7 +22,6 @@ const ISP = {
   rule: '#E2D8C2',
   muted: '#7A6A55',
 }
-const [carteVerre, setCarteVerre] = useState<any[]>([])
 const SAMPLE_DISHES = [
   'Magret de canard aux cerises',
   'Risotto aux champignons des bois',
@@ -278,6 +277,7 @@ function FiltreGroupe({ label, options, selected, onToggle, accentColor, bgColor
 export default function Dashboard() {
   const [plats, setPlats] = useState(['', '', '', '', ''])
   const [stock, setStock] = useState<any[]>([])
+  const [carteVerre, setCarteVerre] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [etapes, setEtapes] = useState<{label: string, done: boolean}[]>([])
 const [progression, setProgression] = useState(0)
