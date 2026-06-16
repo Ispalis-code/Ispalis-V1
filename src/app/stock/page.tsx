@@ -466,6 +466,11 @@ export default function Stock() {
   const fileRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
   const router = useRouter()
+  const [carteVerre, setCarteVerre] = useState<any[]>([])
+const [importingVerre, setImportingVerre] = useState(false)
+const [importMsgVerre, setImportMsgVerre] = useState('')
+const [importOKVerre, setImportOKVerre] = useState(false)
+const fileRefVerre = useRef<HTMLInputElement>(null)
 
   const toggleFilter = (f: string) => {
     if (f === 'all') { setFilter(['all']); return }
@@ -479,8 +484,8 @@ export default function Stock() {
     })
   }
 
-  useEffect(() => { chargerStock() }, [])
-
+useEffect(() => { chargerStock(); chargerCarteVerre() }, [])
+  
   const chargerStock = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/connexion'); return }
@@ -489,6 +494,94 @@ export default function Stock() {
     const { data: userData } = await supabase.from('users').select('seuils_alertes').eq('id', user.id).single()
 if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.seuils_alertes }))
   }
+  const chargerCarteVerre = async () => {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const { data } = await supabase
+    .from('carte_verre')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+  if (data) setCarteVerre(data)
+}
+
+const supprimerCarteVerreRef = async (id: string) => {
+  await supabase.from('carte_verre').delete().eq('id', id)
+  await chargerCarteVerre()
+}
+
+const viderCarteVerre = async () => {
+  if (!confirm('Vider toute la carte des vins au verre ?')) return
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  await supabase.from('carte_verre').delete().eq('user_id', user.id)
+  await chargerCarteVerre()
+}
+
+const importerCarteVerre = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  setImportingVerre(true)
+  setImportMsgVerre('')
+  setImportOKVerre(false)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  try {
+    const XLSX = await import('xlsx')
+    const buffer = await file.arrayBuffer()
+    const workbook = XLSX.read(buffer, { type: 'array' })
+    const sheet = workbook.Sheets[workbook.SheetNames[0]]
+    const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+    if (rows.length === 0) { setImportMsgVerre('Fichier vide'); setImportingVerre(false); return }
+
+    let imported = 0
+    let errors = 0
+
+    for (const row of rows) {
+      const getCol = (keywords: string[]) => {
+        const key = Object.keys(row).find(k =>
+          keywords.some(kw => k.toLowerCase().replace(/[*\s]/g, '').includes(kw.toLowerCase().replace(/[*\s]/g, '')))
+        )
+        return key ? String(row[key]).trim() : ''
+      }
+
+      const nomRef = getCol(['domaine', 'nom_reference', 'nom', 'vin'])
+      const app = getCol(['appellation'])
+      const couleurRaw = getCol(['couleur']).toLowerCase()
+      let coul = 'rouge'
+      if (couleurRaw.includes('blanc')) coul = 'blanc'
+      else if (couleurRaw.includes('ros')) coul = 'rose'
+      else if (couleurRaw.includes('effervescent') || couleurRaw.includes('bulles') || couleurRaw.includes('champagne')) coul = 'effervescent'
+      const millRaw = parseInt(getCol(['millésime', 'millesime', 'vintage']))
+      const mill = isNaN(millRaw) ? null : millRaw
+      const prixVerre = getCol(['prix verre', 'prix_verre', 'tarif verre', 'verre'])
+
+      if (!nomRef) { errors++; continue }
+
+      const { error } = await supabase.from('carte_verre').insert({
+        user_id: user.id,
+        nom_reference: nomRef,
+        appellation: app,
+        couleur: coul,
+        millesime: mill,
+        prix_verre: prixVerre || null,
+        type_boisson: getCol(['type_boisson', 'type de boisson', 'boisson']) || 'vin',
+      })
+      if (error) { errors++ } else { imported++ }
+    }
+
+    setImportMsgVerre(`${imported} références importées${errors > 0 ? ` (${errors} ignorées)` : ''}`)
+    setImportOKVerre(imported > 0)
+    await chargerCarteVerre()
+  } catch (err) {
+    console.error(err)
+    setImportMsgVerre('Erreur lors de la lecture du fichier')
+    setImportOKVerre(false)
+  }
+  setImportingVerre(false)
+  if (fileRefVerre.current) fileRefVerre.current.value = ''
+}
 
   const ajouterReference = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -833,6 +926,67 @@ if (userData?.seuils_alertes) setSeuilsGlobaux(prev => ({ ...prev, ...userData.s
             <p style={{ fontSize: 12.5, color: ISP.muted, margin: '0 0 12px', lineHeight: 1.55 }}>
               Formats acceptes : CSV, Excel (.xlsx) — Sommit detecte automatiquement
             </p>
+            {/* ─── Section carte des vins au verre */}
+<section style={{ background: ISP.card, borderRadius: 18, padding: '24px 28px', border: `1.5px solid ${ISP.rule}` }}>
+  <div style={{ paddingBottom: 12, marginBottom: 16, borderBottom: `2px solid ${ISP.ink}` }}>
+    <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase' as const, color: ISP.terracotta, fontWeight: 800 }}>Méthode 3</div>
+    <h3 style={{ fontSize: 17, fontWeight: 800, margin: '4px 0 4px', letterSpacing: '-0.01em' }}>Carte des vins au verre</h3>
+    <p style={{ fontSize: 12.5, color: ISP.muted, margin: 0, lineHeight: 1.55 }}>
+      Importez votre sélection de vins servis au verre — Ispalis les utilisera en priorité pour les accords "au verre".
+      {carteVerre.length === 0 && <span style={{ color: ISP.sage, fontWeight: 700 }}> Sans cette liste, Ispalis utilisera votre cave complète.</span>}
+    </p>
+  </div>
+
+  {/* Import */}
+  <label style={{ display: 'block', padding: '12px 16px', borderRadius: 10, border: `2px dashed ${importingVerre ? ISP.terracotta : ISP.rule}`, background: importingVerre ? `${ISP.terracotta}10` : ISP.paperWarm, cursor: importingVerre ? 'wait' : 'pointer', textAlign: 'center' as const, transition: 'all .2s', marginBottom: 10 }}>
+    <div style={{ fontSize: 13, fontWeight: 700, color: ISP.ink }}>{importingVerre ? 'Import en cours...' : 'Importer la carte des vins au verre (.xlsx ou .csv)'}</div>
+    <div style={{ fontSize: 11, color: ISP.muted, marginTop: 4 }}>Colonnes attendues : nom, appellation, couleur, millésime, prix verre</div>
+    <input ref={fileRefVerre} type="file" accept=".csv,.xlsx,.xls" onChange={importerCarteVerre} disabled={importingVerre} style={{ display: 'none' }} />
+  </label>
+
+  {importMsgVerre && (
+    <div style={{ padding: '8px 12px', borderRadius: 8, background: importOKVerre ? ISP.sagePale : '#FBE9EB', color: importOKVerre ? ISP.sage : ISP.burgundy, fontSize: 12.5, fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ width: 16, height: 16, borderRadius: '50%', background: importOKVerre ? ISP.sage : ISP.burgundy, color: '#fff', display: 'grid', placeItems: 'center', fontSize: 10, flexShrink: 0 }}>{importOKVerre ? '✓' : '!'}</span>
+      {importMsgVerre}
+    </div>
+  )}
+
+  {/* Liste des références au verre */}
+  {carteVerre.length > 0 && (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: ISP.muted }}>
+          {carteVerre.length} référence{carteVerre.length > 1 ? 's' : ''} au verre
+        </div>
+        <button onClick={viderCarteVerre} style={{ fontSize: 11.5, fontWeight: 700, color: ISP.muted, background: 'transparent', border: `1px solid ${ISP.rule}`, borderRadius: 8, padding: '4px 10px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <TrashIcon size={11} /> Vider
+        </button>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6, maxHeight: 280, overflowY: 'auto' }}>
+        {carteVerre.map((ref: any) => (
+          <div key={ref.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 10, background: ISP.paperWarm, border: `1px solid ${ISP.rule}` }}>
+            <BottleI color={couleurDuVin(ref.couleur)} size={20} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: ISP.ink }}>{ref.nom_reference} {ref.millesime ? `· ${ref.millesime}` : ''}</div>
+              <div style={{ fontSize: 11.5, color: ISP.muted }}>{ref.appellation}{ref.prix_verre ? ` · 🍷 ${ref.prix_verre}` : ''}</div>
+            </div>
+            <button onClick={() => supprimerCarteVerreRef(ref.id)} style={{ width: 28, height: 28, borderRadius: 8, border: 'none', background: 'transparent', color: ISP.muted, cursor: 'pointer', display: 'grid', placeItems: 'center' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${ISP.burgundy}15`; (e.currentTarget as HTMLButtonElement).style.color = ISP.burgundy }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = ISP.muted }}>
+              <TrashIcon size={13} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </>
+  )}
+
+  {carteVerre.length === 0 && !importingVerre && (
+    <div style={{ padding: '20px', borderRadius: 12, background: ISP.paperWarm, textAlign: 'center' as const, color: ISP.muted, fontSize: 13 }}>
+      Aucune référence au verre — Ispalis utilisera votre cave complète pour les accords au verre.
+    </div>
+  )}
+</section>
             {/* Bouton télécharger template */}
 <a
   href="/ispalis_template.xlsx"
