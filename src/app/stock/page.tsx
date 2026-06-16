@@ -928,7 +928,7 @@ const importerCarteVerre = async (e: React.ChangeEvent<HTMLInputElement>) => {
             </p>
 
 
- 
+   <a
            {/* Bouton télécharger template */}
             
               href="/ispalis_template.xlsx"
