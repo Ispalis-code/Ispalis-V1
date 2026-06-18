@@ -163,7 +163,7 @@ export default function Connexion() {
                   letterSpacing: '-0.005em',
                 }}
               >
-                « Un bon accord ne se devine pas, il se travaille, et il se transmet. »
+                «Les accords entre un plat et sa boisson sont comme les notes d'un accord parfait en musique : ils ne doivent ni se couvrir, ni se jalouser, mais fusionner pour créer une mélodie nouvelle qui n'existait pas avant eux.  »
               </blockquote>
               <figcaption
                 style={{
@@ -175,7 +175,7 @@ export default function Connexion() {
                   fontWeight: 800,
                 }}
               >
-                — Maxime Lefort, sommelier
+                — Jean Anthelme Brillat-Savarin
               </figcaption>
             </figure>
           </div>
