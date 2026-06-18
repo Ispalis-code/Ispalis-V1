@@ -163,7 +163,7 @@ export default function Connexion() {
                   letterSpacing: '-0.005em',
                 }}
               >
-                «Les accords entre un plat et sa boisson sont comme les notes d'un accord parfait en musique : ils ne doivent ni se couvrir, ni se jalouser, mais fusionner pour créer une mélodie nouvelle qui n'existait pas avant eux.  »
+                « Les accords entre un plat et sa boisson sont comme les notes d'un accord parfait en musique : ils ne doivent ni se couvrir, ni se jalouser, mais fusionner pour créer une mélodie nouvelle qui n'existait pas avant eux.  »
               </blockquote>
               <figcaption
                 style={{
